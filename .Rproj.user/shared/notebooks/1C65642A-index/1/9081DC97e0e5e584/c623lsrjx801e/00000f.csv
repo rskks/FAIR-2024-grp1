@@ -1,0 +1,4 @@
+"0","GoanaResultsBP.SU <- GoanaResults[GoanaResults$Ont == ""BP"" & GoanaResults$N < 200 & "
+"0","                                    GoanaResults$FDR.Up < .05, ]"
+"2","Error: object 'GoanaResults' not found
+"

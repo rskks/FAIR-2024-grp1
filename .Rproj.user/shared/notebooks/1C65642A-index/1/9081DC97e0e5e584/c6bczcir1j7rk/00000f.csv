@@ -1,0 +1,8 @@
+"0","library(clusterProfiler)"
+"0","library(org.Hs.eg.db)"
+"0","library(edgeR)"
+"0","library(gplots)"
+"0","library(tidyverse)"
+"0",""
+"0","counts <- read.csv(""Group1.csv"", row.names = 1)"
+"0",""

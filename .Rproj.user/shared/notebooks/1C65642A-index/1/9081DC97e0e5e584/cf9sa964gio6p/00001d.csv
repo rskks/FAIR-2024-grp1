@@ -1,0 +1,6 @@
+"0","# MERGE ANNOTATIONS"
+"0","annot2 <- read.csv(""Annotations.csv"")"
+"0","# Merge your added annotation information with your results"
+"0","Results <- merge(annot2, Results, by.x = ""ENSEMBL"", by.y = ""genes"")"
+"2","Error in fix.by(by.y, y) : 'by' must specify a uniquely valid column
+"
