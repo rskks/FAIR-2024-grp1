@@ -215,9 +215,9 @@ summary(de)
 Setting up detag
 ```{r}
 # MERGE ANNOTATIONS
-annot <- read.csv("Annotations.csv")
+annot2 <- read.csv("Annotations.csv")
 # Merge your added annotation information with your results
-Results <- merge(annot, Results, by.x = "ENSEMBL", by.y = "genes")
+Results <- merge(annot2, Results, by.x = "ENSEMBL", by.y = "genes")
 
 # Save your results in a .csv file that you can open with excel
 write.csv(Results, file = "log2FC_PA_vs_Untreated.csv", row.names = FALSE)

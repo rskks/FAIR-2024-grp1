@@ -1,0 +1,7 @@
+"0","# Make an MA plot highlighting significantly differentially expressed genes"
+"0","plotSmear(lrt, de.tags = detags, cex = 0.5, main = ""DE Genes with Pseudomonas Treatment"")"
+"2","Warning in plot.xy(xy.coords(x, y), type = type, ...) :"
+"2","
+ "
+"2"," ""panel.first"" is not a graphical parameter
+"

@@ -1,0 +1,4 @@
+"0","# Make a volcano plot"
+"0","plot(-log10(Results$PValue) ~ Results$logFC, "
+"0","     xlab = ""log2 fold change"", ylab = ""-log10 p-value"", "
+"0","     main = ""DE Genes with Pseudomonas Treatment"", xlim = c(-10, 10))"

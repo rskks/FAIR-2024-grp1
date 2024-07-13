@@ -217,7 +217,7 @@ Setting up detag
 # MERGE ANNOTATIONS
 annot2 <- read.csv("Annotations.csv")
 # Merge your added annotation information with your results
-Results <- merge(annot2, Results, by.x = "ENSEMBL", by.y = "genes")
+#Results <- merge(annot2, Results, by.x = "ENSEMBL", by.y = "genes")
 
 # Save your results in a .csv file that you can open with excel
 write.csv(Results, file = "log2FC_PA_vs_Untreated.csv", row.names = FALSE)
@@ -270,106 +270,4 @@ summary(de)
 ```
 ```{r}
 write.csv(Results, file = "log2FC_PA_vs_Untreated.csv", row.names = FALSE)
-```
-## Part 3 – Pathway Analysis (Bonus)
-
-
-
-
-If there is time left, you may try to perform pathway analysis (using R or an online tool) to see if any pathways are enriched for genes that are differentially expressed between EVPA and EV treatment.
-
-```{r}
-#Import gene expression table - from the EdgeR module
-edgeRdata <- read.csv("log2FC_PA_vs_Untreated.csv")
-head(edgeRdata)
-```
-
- identify up-regulated differentially expressed (DE) genes (FDR < 0.05) 
-```{r}
-SigGenes <- edgeRdata[which(edgeRdata$FDR<0.05 & edgeRdata$logFC>0),"ENSEMBL"]
-length(SigGenes) 
-head(SigGenes)
-
-SigGenesdown <- edgeRdata[which(edgeRdata$FDR<0.05 & edgeRdata$logFC<0),"ENSEMBL"]
-length(SigGenesdown) #1032 DE genes 
-head(SigGenesdown)
-```
-
- all genes detected
-```{r}
-ExpGenes<-edgeRdata$ENSEMBL
-```
-
- Only ENSEMBL gene annotation is stored in the lrt object, 
- or lrt$genes, more precisely.
- However, GO terms are defined by 
- National Human Genome Research Institute, an american institute.
- Hence GO terms use ENTREZID to annotate the database, 
- and we need to add ENTREZID annotation into lrt object.
-```{r}
-str(annot)
-head(annot)
-lrt$genes<-annot[match(lrt$genes$genes,annot$ENSEMBL),]
-head(lrt$genes)
-```
-
-```{r}
-GoanaResults<-goana(lrt,
-                    geneid=lrt$genes$ENTREZID,
-                    species="Hs",
-                    FDR = .05)
-```
-
-```{r}
-str(GoanaResults)
-head(GoanaResults)
-dim(GoanaResults) 
-```
-
- let's adjust the p-values with FDR method
- Benjamini & Hochberg (1995) ("BH" or its alias "fdr")
-```{r}
-GoanaResults$FDR.Up<-p.adjust(GoanaResults$P.Up, method = "fdr")
-GoanaResults$FDR.Down<-p.adjust(GoanaResults$P.Down, method = "fdr")
-
-head(GoanaResults)
-```
-
- How many up-regulated biological processes?
-```{r}
-dim(GoanaResults[which(GoanaResults$P.Up<.05 & GoanaResults$Ont=="BP"),])   #2688
-dim(GoanaResults[which(GoanaResults$FDR.Up<.05 & GoanaResults$Ont=="BP"),]) #1515
-```
- How many up-regulated and enriched GO terms
-```{r}
-dim(GoanaResults[which(GoanaResults$FDR.Up<.05),])
-```
-
- Unrapping GoanaResult 
- Top enriched GO terms in up-regulated genes 
- There is a topGO() function to identify top enriched GO Terms.
- However, topGO() is not flexible enough to identify GO term of interest
- let's just use the great old friend - [ ] - to select what we want
-
- The top20 GO terms that are enriched in the up-regulated genes.
- i.e. The top 20 up-regulated GO terms
-```{r}
-GoanaResults[order(GoanaResults$FDR.Up)[1:20],] 
-View(GoanaResults[order(GoanaResults$FDR.Up)[1:20],] )
-```
-The top 20 GO terms are too general terms (n>4,000)
- How many genes in each GO terms
-```{r}
-hist(GoanaResults$N)
-hist(GoanaResults$N[GoanaResults$N<1000]) # narrow down to show the histogram with N<1000
-```
-
- let's select those terms with fewer than 200 genes involved.
- this can help us identify GO terms with more specific annotation 
-
-```{r}
-GoanaResultsBP.SU <- GoanaResults[GoanaResults$Ont == "BP" & GoanaResults$N < 200 & 
-                                    GoanaResults$FDR.Up < .05, ]
-
-GoanaResultsBP.SU[order(GoanaResultsBP.SU$FDR.Up)[1:10], ] #now, it makes more sense
 ```

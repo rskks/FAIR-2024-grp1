@@ -1,0 +1,3 @@
+"0","points(-log10(Results$PValue[Results$ENSEMBL %in% detags]) ~ "
+"0","         Results$logFC[Results$ENSEMBL %in% detags], "
+"0","       col = ""red"", pch = 16)"
