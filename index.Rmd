@@ -1,0 +1,210 @@
+---
+title: "Group 1 Project"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    df_print: paged
+  html_notebook:
+    toc: true
+    toc_float: true
+  pdf_document:
+    toc: true
+---
+
+##Load the libraries and data
+
+```{r, include=FALSE}
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(edgeR)
+library(gplots)
+library(tidyverse)
+
+counts <- read.csv("Group1.csv", row.names = 1)
+
+```
+
+Set the factors
+
+```{r}
+treatment_pattern <- (rep(c("Untreated", "Treatment"), times = 9))
+treatment <- factor(c(treatment_pattern))
+
+donor_pattern <- c(rep("M24", times = 6), rep("M31", times = 6), rep("M32", times = 6))
+donors <- factor(c(donor_pattern))
+
+```
+
+Cbind the factors
+```{r}
+groups <- data.frame(sample = colnames(counts), treatment, donors)
+
+cbind(groups,colnames(counts))
+
+```
+##Part 1 – Exploratory Analysis
+###1.	Visualize your library sizes.
+```{r}
+
+boxplot(colSums(counts) ~ donors)
+
+```
+```{r}
+boxplot(colSums(counts) ~ treatment)
+```
+
+```{r}
+boxplot(colSums(counts) ~ groups$sample)
+```
+
+```{r}
+hist(log2(rowSums(counts)))
+```
+
+###3.	Determine how many genes had zero counts and remove these genes (rows) from the data set. What does your count distribution look like before and after this?
+
+```{r}
+MinVals <- apply(counts, 1, min)
+sum(MinVals == 0) 
+Exp <- counts[MinVals > 0, ]
+```
+
+```{r}
+ExpLog2 <- log2(Exp)
+hist(rowMeans(ExpLog2), xlab = "Counts (log2)", main = "Expressed Genes")
+```
+###4.	Make a boxplot of log2 raw counts after removing all genes that had zero counts. 
+
+Plot "raw" (our log2 transformed) sample counts
+
+```{r}
+boxplot(ExpLog2, ylab = "log2 counts", main = "Raw RNA-Seq Counts", las = 2)
+```
+
+###5.	Make a Cluster Dendrogram of the raw data.
+
+```{r}
+RawDist <- dist(t(ExpLog2), method = "euclidean")
+plot(hclust(RawDist, method = "average"))
+```
+
+ Simple normalization 
+
+```{r}
+SampleMedians <- apply(ExpLog2, 2, median) # Find the median value of each column - 2 means column
+GrandMedian <- mean(SampleMedians) # Take the average of those
+CorrectionFactors <- GrandMedian - SampleMedians # Calculate correction factor to apply to data
+CorrectionFactors
+```
+ These correction factors will align the medians of all of our samples
+ This changes our counts just enough to correct for variability between
+ samples/groups without loosing any actual effects of changes in gene expression.
+
+ Loop through each column (sample) and fill in medians adjusted with 
+ sample correction factor
+```{r}
+ExpNorm <- ExpLog2
+
+for(col in colnames(ExpNorm)){
+  ExpNorm[, col] <- ExpLog2[, col] + CorrectionFactors[col]
+}
+```
+
+###6.	Do a simple normalization of your data and visualize your normalized data with a boxplot of log2 raw counts and a cluster dendrogram. Did normalization change anything?
+```{r}
+boxplot(ExpNorm, ylab = "log2 counts", main = "Normalized Counts", las = 2)
+```
+
+ Cluster dendrogram of normalized data
+```{r}
+NormDist <- dist(t(ExpNorm), method = "euclidean")
+plot(hclust(NormDist, method = "average"))
+```
+###7 Make a PCA plot and use color to highlight groups
+```{r}
+PCA <- prcomp(t(NormDist))
+plot(PCA$x[ , 1], PCA$x[ , 2], pch = 16)
+```
+
+ By donor
+```{r}
+plot(PCA$x[ , 1], PCA$x[ , 2], pch = 16, col = donors, 
+     main = "Colored by Donor")
+legend("bottomright", legend = unique(donors), pch = 16, col = unique(donors))
+```
+ By treatment
+```{r}
+plot(PCA$x[ , 1], PCA$x[ , 2], pch = 16, col = treatment, 
+     main = "Colored by Treatment")
+legend("bottomright", legend = unique(treatment), pch = 16, col = unique(treatment))
+```
+
+#Part 2. Differential Gene Expression with edgeR
+##When creating the DGEList object, include the gene annotation information from the "Annotations.csv" file as your argument in “genes =”
+```{r}
+annotations <- read.csv(file = "Annotations.csv",
+                     header = TRUE, 
+                     row.names = 1)
+DGE <- DGEList(counts = counts, remove.zeros = TRUE, genes = annotations)
+```
+
+##Include both treatment and donor in your experimental design matrix.
+```{r}
+design <- model.matrix(~ treatment + donors)
+rownames(design) <- colnames(DGE)
+design
+```
+# Remove low expression genes 
+```{r}
+keep <- filterByExpr(DGE, design, min.count = 10, min.total.count = 15)
+DGE <- DGE[keep, ] # Keep genes that meet our threshold!
+```
+# Take a look at the library sizes of each sample
+```{r}
+DGE$samples
+```
+# Normalize for different library sizes (TMM, trimmed mean of M-values)
+```{r}
+DGE <- calcNormFactors(DGE) # Calculates normalization factors and adds them to our DGE object
+DGE$samples
+```
+# Calculate overall dispersion
+# estimateGLMCommonDisp calculates within-group and between-group variability. 
+```{r}
+DGE <- estimateGLMCommonDisp(DGE, design, verbose = TRUE)
+```
+# Calculate dispersion trend based on gene abundance
+```{r}
+DGE <- estimateGLMTrendedDisp(DGE, design) 
+```
+# Calculate separate dispersion for each gene
+```{r}
+DGE <- estimateGLMTagwiseDisp(DGE, design) 
+```
+# Visualize dispersion
+```{r}
+plotBCV(DGE)
+
+```
+# Let's check that our normalization worked by plotting the log2(CPM) -- counts per million
+```{r}
+CPM <- cpm(DGE, normalized.lib.sizes = TRUE, log = TRUE)
+CPM <- as.data.frame(CPM)
+```
+# Visualize normalized data
+```{r}
+boxplot(CPM, las = 2, ylab = "log2 CPM", main = "Normalized Data")
+```
+###Contrast Matrix
+```{r}
+contrast.matrix <- makeContrasts(PA_vs_Unt = treatmentUntreated,
+                                 levels = design)
+```
+
+# Fit a gene-wise negative binomial generalized linear model
+```{r}
+fit <- glmFit(DGE, design, contrast = contrast.matrix)
+lrt <- glmLRT(fit, contrast = contrast.matrix[,"PA_vs_Unt"]) 
+topTags(lrt)
+```

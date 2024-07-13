@@ -1,0 +1,20 @@
+"0","plotSmear(lrt, de.tags = detags, cex = 0.5, main = ""DE Genes with Pseudomonas Treatment"")"
+"2","Warning in plot.xy(xy.coords(x, y), type = type, ...) :"
+"2","
+ "
+"2"," ""panel.first"" is not a graphical parameter
+"
+"2","Warning messages:
+"
+"2","1: "
+"2","In doTryCatch(return(expr), name, parentenv, handler) :"
+"2","
+ "
+"2"," ""panel.first"" is not a graphical parameter
+"
+"2","2: "
+"2","In doTryCatch(return(expr), name, parentenv, handler) :"
+"2","
+ "
+"2"," ""panel.first"" is not a graphical parameter
+"

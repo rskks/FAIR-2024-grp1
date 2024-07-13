@@ -1,61 +1,12 @@
----
-title: "GrpprjctOleg"
-author: "rskks"
-date: "2024-07-13"
-output: html_document
----
+Part 2 – Differential Gene Expression Analysis
 
-Load the data
+Perform differential gene expression analysis with edgeR using the script from the edgeR module as a template. 
+1.	When creating the DGEList object, include the gene annotation information from the "Annotations.csv" file as your argument in “genes =”.
+2.	Include both treatment and donor in your experimental design matrix.
+3.	When running the glmLRT function, be careful to use the correct name to specify the comparison of interest. For the purpose of this exercise, we are interested in the treatment effects.
+4.	After executing all the code of the edgeR workflow, answer the following questions:
+a)	How many genes are differentially expressed (p<0.05 & log2 FC > 1) between the two genotypes?
+b)  Make an MA plot of edgeR results with DE genes (p<0.05 & log2 FC > 1) highlighted in red.
+c) Generate a Volcano plot of edgeR results. 
+d) Is there an uneven number of genes that are up- or down-regulated when comparing the two genotypes?
 
-```{r}
-library(clusterProfiler)
-library(org.Hs.eg.db)
-library(edgeR)
-counts <- read.csv("Group1.csv", row.names = 1)
-
-```
-
-```{r}
-dim(counts)
-
-EV <- factor(c("Untreated", "Treatment", "Untreated", "Treatment", "Untreated", "B"))
-```
-
-```{r}
-# EV vs EVPA group as factors to separate 
-dim(counts)
-
-colnames <- colnames(counts)
-
-# samples just EVPA
-
-EVPA_pattern <- "EVPA"
-EVPA_matches <- grepl(EVPA_pattern, colnames)
-
-# Subset the original vector based on the matches
-EVPA_matching <- colnames[EVPA_matches]
-
-# View the samples that match the pattern
-print(EVPA_matching)
-
-pattern <- "^(?!.*EVPA).*$"
-
-# Use grepl with the negative pattern
-matches <- grepl(pattern, colnames, perl = TRUE)
-
-# Subset words based on the matches
-without_EVPA <- colnames[matches]
-
-print(without_EVPA)
-```
-
-Annotate 
-```{r}
-column_namesEVPA <- grep("EVPA", colnames(counts), value = TRUE)
-counts2 <- counts[,grep("EVPA", colnames(counts))]
-counts3 <- -counts[,grep*("EVPA", )]
-head(counts2)
-
-print(column_names)
-EVPAcols <- factor(column_names)
-```

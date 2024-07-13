@@ -1,11 +1,11 @@
 {
     "id": "8697DA09",
-    "path": null,
-    "project_path": null,
+    "path": "~/Documents/Science-2024/Meetings/FAIR-course/Course-files/14_Grpprjct1/test.R",
+    "project_path": "test.R",
     "type": "r_source",
-    "hash": "0",
+    "hash": "1384250006",
     "contents": "",
-    "dirty": true,
+    "dirty": false,
     "created": 1720883587278.0,
     "source_on_save": false,
     "relative_order": 1,
@@ -17,11 +17,11 @@
         "scrollLine": "0"
     },
     "folds": "",
-    "lastKnownWriteTime": 4997783104,
-    "encoding": "",
+    "lastKnownWriteTime": 1720895343,
+    "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1720886611338,
+    "last_content_update": 1720895343989,
     "read_only": false,
     "read_only_alternatives": []
 }

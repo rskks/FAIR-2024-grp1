@@ -3,24 +3,24 @@
     "path": "~/Documents/Science-2024/Meetings/FAIR-course/Course-files/8_Exploratory_analysis/Exploratory_Analysis.R",
     "project_path": null,
     "type": "r_source",
-    "hash": "0",
+    "hash": "1084027229",
     "contents": "",
-    "dirty": true,
+    "dirty": false,
     "created": 1720884389614.0,
     "source_on_save": false,
     "relative_order": 4,
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "199,35",
-        "scrollLine": "192"
+        "cursorPosition": "52,46",
+        "scrollLine": "41"
     },
     "folds": "",
-    "lastKnownWriteTime": 1720721961,
+    "lastKnownWriteTime": 1720895338,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1720891609950,
+    "last_content_update": 1720895338230,
     "read_only": false,
     "read_only_alternatives": []
 }

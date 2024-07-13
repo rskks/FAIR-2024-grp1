@@ -1,25 +1,12 @@
----
-title: "GrpprjctOleg"
-author: "rskks"
-date: "2024-07-13"
-output: html_document
----
+Part 2 – Differential Gene Expression Analysis
 
-Load the data
+Perform differential gene expression analysis with edgeR using the script from the edgeR module as a template. 
+1.	When creating the DGEList object, include the gene annotation information from the "Annotations.csv" file as your argument in “genes =”.
+2.	Include both treatment and donor in your experimental design matrix.
+3.	When running the glmLRT function, be careful to use the correct name to specify the comparison of interest. For the purpose of this exercise, we are interested in the treatment effects.
+4.	After executing all the code of the edgeR workflow, answer the following questions:
+a)	How many genes are differentially expressed (p<0.05 & log2 FC > 1) between the two genotypes?
+b)  Make an MA plot of edgeR results with DE genes (p<0.05 & log2 FC > 1) highlighted in red.
+c) Generate a Volcano plot of edgeR results. 
+d) Is there an uneven number of genes that are up- or down-regulated when comparing the two genotypes?
 
-```{r}
-library(clusterProfiler)
-library(org.Hs.eg.db)
-library(edgeR)
-counts <- read.csv("Group1.csv", row.names = 1)
-
-```
-
-```{r}
-treatment_pattern <- (rep(c("Untreated", "Treatment"), times = 9))
-treatment <- factor(c(treatment_pattern))
-
-donor_pattern <- c(rep("M24", times = 6), rep("M31", times = 6), rep("M32", times = 6))
-donors <- factor(c(donor_pattern))
-
-```

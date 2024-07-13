@@ -133,7 +133,7 @@ hist(rowMeans(ExpLog2), xlab = "Counts (log2)", main = "Expressed Genes")
 # Now let's take a look at these counts across our samples
 
 # Plot "raw" (our log2 transformed) sample counts
-boxplot(ExpLog2, ylab = "log2 counts", main = "Raw RNA-Seq Counts", las = 2)
+boxplot(ExpLog2, ylab = annotat, las = 2)
 
 # With this "uneven" distribution of counts, how do our samples cluster?
 # Do donors and treatments cluster together? Are there any outliers 
@@ -291,7 +291,7 @@ ExpLog2 <- log2(Exp)
 hist(rowMeans(ExpLog2), xlab = "Counts (log2)", main = "Expressed Genes")
 
 # 5. Make a box plot of the normalized data.
-boxplot(ExpLog2, ylab = "log2 counts", main = "Raw RNA-Seq Counts", las = 2)
+boxplot(ExpLog2, ylab = annot, las = 2)
 
 # 6. Make a PCA plot of the normalized data and color it by tissue.
 #    What tissue is all by itself in the upper right corner?

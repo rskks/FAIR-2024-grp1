@@ -1,0 +1,573 @@
+# Introduction to edgeR and Differential Gene Expression 
+# FAIR Bioinformatics - July 11, 2024, Lily Charpentier
+
+
+# Today we're going to analyze RNA-Seq data continuing after exploratory analysis.
+# (Remember to always do exploratory analyses before jumping into 
+# differential expression!)
+
+# The edgeR package is extremely useful for differential gene expression
+# In fact, it can even be used to process data from any type of technology 
+# that produces genomic read counts
+# Ex: RNA-Seq, nCounter, ChIP-Seq, etc.
+# These count tables will all be in the same basic format: Rows = Genes, 
+# Columns = Individual libraries (samples), and cells contain read counts  
+
+
+# Load packages
+# install.packages("BiocManager")
+# BiocManager::install("edgeR")
+library(edgeR)
+install.packages("tidyverse")
+library(tidyverse)
+install.packages("gplots")
+library(gplots)
+library(org.Hs.eg.db)
+
+# Before we get into edgeR, we should read in our data and format it
+# I have included a counts table and a metadata file that gives details of each 
+# sample in the folder for today's session.
+# All information/data is available through NCBI GEO: GSE97036
+
+# The following two files are the same ones we started with in our exploratory
+# analysis module.
+
+# Read in counts
+counts <- read.csv(file = "GSE97036_raw_counts.csv",
+                     header = TRUE, 
+                     row.names = 1)
+
+# Read in metadata
+metadata <- read.csv(file = "GSE97036_metadata.csv",
+                       header = TRUE, 
+                       row.names = 1)
+
+# How many different genes and samples are we dealing with?
+dim(counts)
+# 43363 genes and 43 samples
+
+# In order to make sure each sample is annotated with the correct information, 
+# we need to define our groups/treatments and set these as factors.
+Donor <- factor(metadata$Donor)
+Arsenic <- factor(metadata$Arsenic)
+Pseudomonas <- factor(metadata$Pseudomonas, levels = c("Untreated", "Treated"))
+
+# If you only have a few samples, don't have a metadata file, 
+# and know what order everything is in, you can just write out the factor assignment
+# Ex. If you have 6 samples and you know the first 3 are from donor A and 
+# the second 3 are from donor B, you can write:
+# Donor <- factor(c("A","A", "A", "B", "B", "B"))
+# OR
+# Donor <- factor(c(rep("A", 3), rep("B", 3)))
+
+groups <- data.frame(Sample = rownames(metadata), Donor, Arsenic, Pseudomonas)
+
+# Check it out to make sure everything is in the same order as your samples in 
+# counts
+cbind(groups, colnames(counts))
+# Looks good!
+
+# Let's rename the counts columns to something more informative
+groups$ColNames <- paste(groups$Donor, groups$Arsenic, groups$Pseudomonas, 
+                         sep = "_")
+colnames(counts) <- groups$ColNames
+colnames(counts)
+
+
+# *** Now for edgeR! ***
+# **********************
+
+# We'll start by creating a DGE object using our counts file
+# We will set the "counts =" to our counts dataframe, remove any rows with zero 
+# counts, and set our gene names are the row names in our counts table. 
+# You can set the genes argument to an annotation table that contains multiple 
+# gene identifiers as well (ENSEMBL, ENTREZ, etc.)
+
+DGE <- DGEList(counts = counts, remove.zeros = TRUE, genes = rownames(counts))
+
+# Create design matrix
+# This will inform our DGE object of which samples will be reference conditions
+# for each factor we are interested in
+design <- model.matrix(~ 0 + treatment + donors) #0 is needed to add Arsenic_0 
+rownames(design) <- colnames(DGE)
+design
+
+# Remove low expression genes 
+keep <- filterByExpr(DGE, design, min.count = 10, min.total.count = 15)
+DGE <- DGE[keep, ] # Keep genes that meet our threshold!
+
+# Sometimes data contains compositional biases, where certain genes or samples 
+# have higher read counts due to technical reasons.
+# You wouldn't want that to affect your analysis!
+
+# Take a look at the library sizes of each sample
+DGE$samples
+# Are there any differences in library size?
+# We'll fix that in a minute by normalizing
+
+# So, instead of using the total library size (what we saw on line 107), 
+# which is the sum of the reads to all of the genes, we will use TMM normalization.
+# Trimmed mean of M-values, where M-values are the log fold change between each 
+# sample and a reference.
+# *TMM trims off the most highly variable genes and then calculates a normalization* 
+# factor that is used to adjust the library size
+
+# Normalize for different library sizes (TMM, trimmed mean of M-values)
+DGE <- calcNormFactors(DGE) # Calculates normalization factors and adds them to our DGE object
+DGE$samples
+
+
+# Now on to dispersion
+# Dispersion means biological coeffient of variation (BCV) squared (BCV^2).
+# This is a measure of variability
+# Ex: If gene expression typically differs from replicate to replicate by 20% 
+# its BCV is 0.2, and its dispersion is 0.04. 
+# Dispersion can also vary based on the biological model you are using. 
+# For example, human data could have a BCV of 0.4,
+# while genetically identical model organisms could be 0.1.
+
+# edgeR estimates dispersion from replicates using the quantile-adjusted 
+# conditional maximum likelihood method (qCML). The qCML method is designed to 
+# address composition bias, which occurs when the proportion of reads mapping 
+# to different genes varies across samples. This bias can arise due to factors 
+# such as differences in sequencing depths or varying transcript abundances. 
+
+# The qCML method uses 2 main types of dispersion:
+# Common dispersion calculates a common dispersion value for all genes, 
+# while the tagwise method calculates gene-specific dispersions. 
+
+# Calculate overall dispersion
+# estimateGLMCommonDisp calculates within-group and between-group variability. 
+DGE <- estimateGLMCommonDisp(DGE, design, verbose = TRUE)
+
+# For this data: Disp = 0.0971 , BCV = 0.3116.
+# So on average, the true abundance for each gene can vary up or down by ~31% 
+# between replicates
+
+# Calculate dispersion trend based on gene abundance
+DGE <- estimateGLMTrendedDisp(DGE, design) 
+
+# Calculate separate dispersion for each gene
+DGE <- estimateGLMTagwiseDisp(DGE, design) 
+
+
+# Visualize dispersion
+plotBCV(DGE)
+
+
+# Let's check that our normalization worked by plotting the log2(CPM)
+CPM <- cpm(DGE, normalized.lib.sizes = TRUE, log = TRUE)
+CPM <- as.data.frame(CPM) #we want to turn it into df to plot
+
+# Visualize normalized data
+boxplot(CPM, las = 2, ylab = "log2 CPM", main = "Normalized Data") #our normalization worked
+
+
+
+# Now for the main point of this session, differential gene expression!
+
+# We first should consider what specific comparisons we would like to make
+# What's our research question and what would I like to know?
+
+# We can make a contrast matrix to specify specific comparisons of interest
+# Condition1 - Condition2 will result in the log2FC in Condition1 using 
+# Condition2 as a reference
+# If there are only two factor levels and the reference level doesn't appear
+# in our design matrix, we only need to specify the name of the level
+# Add as many specific comparisons as you would like
+contrast.matrix <- makeContrasts(PA_vs_Unt = PseudomonasTreated,
+                                 Arsenic50_vs0 = Arsenic50 - Arsenic0,
+                                 levels = design)
+
+
+# GLM likelihood ratio test for identifying DE genes
+
+# glmFit and glmLRT use generalized linear model (GLM) methods
+# The Likelihood ratio test (LRT) is based on the idea of fitting negative
+# binomial GLMs with the Cox-Reid dispersion estimates, which will take all known
+# sources of variation into account. Because of this, the GLM likelihood 
+# ratio test is recommended for experiments with multiple factors.
+
+# Fit a gene-wise negative binomial generalized linear model
+fit <- glmFit(DGE, design, contrast = contrast.matrix)
+
+# When running the glmLRT function, 
+# be careful to use the correct name to specify the comparison of interest! 
+# Here, we are primarily interested in the "PA vs Untreated" comparison
+lrt <- glmLRT(fit, contrast = contrast.matrix[,"PA_vs_Unt"]) 
+topTags(lrt)
+
+# Here are the prelim results! You get a table that has your genes, the logFC, 
+# logCPM, LR (likelihood ratio test statistics), p-value, and FDR-adjusted p-value
+
+# Now see how many genes are either up- or down-regulated w/ PA treatment
+de <- decideTests(lrt, adjust.method = "fdr")
+summary(de)
+
+# 3106 genes are down-regulated and 2829 are up-regulated according to FDR!
+
+# Save your results
+Results <- as.data.frame(topTags(lrt, n = dim(DGE)[1]))
+
+# At this point I like to add any additional info to my results before I
+# save it. This would be where I do the ID conversion that we learned this morning.
+# I like to add the ENTREZID, symbol, and name for each gene. You can add more info
+# if you would like. For the keys, I used Results$genes
+
+# For time's sake, I already did this and stored it in a .csv. Use your annotation
+# package of choice
+
+Annot <- read.csv("Annotations.csv",
+                  header = TRUE, row.names = 1)
+
+# Merge your added annotation information with your results
+Results <- merge(Annot, Results, by.x = "ENSEMBL", by.y = "genes")
+
+# Save your results in a .csv file that you can open with excel
+write.csv(Results, file = "log2FC_PA_vs_Untreated.csv", row.names = FALSE)
+
+# But how many of those are actually significant?
+# Save the ones with p-value < 0.05 and log2FC > 1 - OLEG personal threshhold, this is Liliys' - unadjusted p-value and anything more than 2 fold higher
+# You can change these values to be whatever threshold you'd like
+# Using the unadj. p-value and FC can produce more reproducible results than 
+# using FDR alone!
+DE <- Results[Results$PValue < 0.05 & abs(Results$logFC) > 1, ]
+
+# Save those gene names as "detags"
+detags <- DGE$genes
+
+
+# Now let's take a look at the data!
+# Make an MA plot highlighting significantly differentially expressed genes
+plotSmear(lrt, de.tags = detags, cex = 0.5, main = "DE Genes with Pseudomonas Treatment")
+abline(h = c(-1, 1), col = "blue")
+legend("bottomright", legend = "DE genes (FC > 2, P-value < 0.05)", pch = 16, 
+       col = "red", bty = "n")
+
+# Make a volcano plot
+plot(-log10(Results$PValue) ~ Results$logFC, 
+     xlab = "log2 fold change", ylab = "-log10 p-value", 
+     main = "DE Genes with Pseudomonas Treatment", xlim = c(-10, 10))
+points(-log10(Results$PValue[Results$ENSEMBL %in% detags]) ~ 
+         Results$logFC[Results$ENSEMBL %in% detags], 
+       col = "red", pch = 16)
+abline(v = c(-1, 1), col = "blue")
+legend("topleft", legend = "DE genes (FC > 2, p < 0.05)", pch = 16, 
+       col = "red", bty = "n")
+
+
+# Want to label the symbols of some genes of interest?
+# Let's label the top 4 genes (highest absolute FC)
+Results_arranged <- arrange(Results, PValue)
+top4_Results <- Results_arranged[1:4, ]
+text(-log10(top4_Results$PValue) ~ top4_Results$logFC, 
+     labels = top4_Results$SYMBOL, cex = 0.9, font = 2)
+
+# Next, lets define our colors so we can visualize clustering
+# You need a character vector to represent each sample's annotation color
+# This vector must be in the same order + have the same # columns as your 
+# heatmap data!
+Colors <- as.vector(colnames(CPM))
+Colors[grepl("Untreated", Colors)] <- "Blue"
+Colors[grepl("Treated", Colors)] <- "Red"
+
+heatmap.2(as.matrix(CPM[rownames(CPM) %in% detags, ]), 
+          scale = "row", trace = "none", labRow = FALSE, srtCol=45,
+          margins = c(8, 6), ColSideColors = Colors)
+# ColSideColors is what adds the annotation
+
+# You'll learn how to make prettier, more customizable heatmaps next week!
+
+
+# Final take home points:
+
+# - Always remember to do some exploratory analysis before differential gene 
+#   expression!
+# - When setting up a design matrix, keep in mind what comparisons you want to make
+# - Using logFC and p-value can give more reproducible results than FDR alone
+
+
+# ******* Exercises ********
+# **************************
+
+# For the exercise we will work with counts from GSE139078
+
+# "Ivacaftor or lumacaftor/ivacaftor treatment does not alter the core CF airway 
+# epithelial gene response to rhinovirus" De Jong et al., J Cyst Fibros, 2021
+
+# In brief, nineteen CF lung epithelial cells (CFTR Class 2: 10 homozygous for 
+# p.Phe508del, CFTR Class 3: 9 p.Phe508del/p.Gly551Asp) were infected with 
+# rhinovirus (HRV) 1B at multiplicity of infection 12 for 24 hours.
+# RNA was harvested to assess gene expression and to test the hypothesis 
+# that treatment of CF epithelial cells with Ivacaftor or Orkambi would improve 
+# control of HRV infection.
+
+# For the purposes of this session, a subset of this data will be used for the 
+# exercises (Class 2 CFTR mutation (Orkambi treatment), tracheal cells)
+
+# Read in counts
+HRVcounts <- read.csv(file = "./Exercise_Data/GSE139078_genecounts.csv",
+                    header = TRUE, 
+                    row.names = 1)
+
+# Load in annotation data
+HRVmetadata <- read.csv(file = "./Exercise_Data/GSE139078_metadata.csv",
+                      header = TRUE, 
+                      row.names = 1)
+
+# *** Green ***
+# *************
+
+# 1. How many genes and samples are in this data set? 
+dim(HRVcounts)
+47k genes, 15 samples
+
+# 2. Set HRV, HEMT, and replicate as factors and create an HRVgroups dataframe.
+#    Set the HRV level "Uninfected" as the reference by adding: 
+#    , levels = c("Untreated", "Treated") after metadata2$HRV inside the factor 
+#    command.
+
+
+# 3. Set the HRVcounts column names to be more informative,
+#    such as "HRV_HEMT_Replicate"
+
+
+# 4. Make your DGE object and name it HRVDGE.
+
+
+# 5. Make your design matrix taking into account HRV and HEMT. 
+
+
+# 6. Remove low expression genes, then calculate normalization factors and 
+#    dispersion. Plot BCV 
+
+
+# 7. Make a boxplot of normalized CPMs to see if normalization worked
+
+
+
+# *** Blue ***
+# ************
+
+# 1. Make a contrast matrix to look at the effects of HRV in fection or Orkambi
+#    treatment.
+
+
+# 2. Fit a gene-wise negative binomial generalized linear model and conduct a 
+#    likelihood ratio test for each comparison.
+#    How many genes are differentially expressed? 
+#    How many are significant (p-val < 0.05 and FC > 1)?
+
+
+# 3. Save those top genes and plot an MA plot and a volcano plot for each comparison.
+
+
+
+# *** Black ***
+# *************
+
+# 1. Create a heatmap of only the top 10 most significant genes for each 
+#    comparison. Display the gene names in the Orkambi heatmap. Save both heatmaps 
+#    as pdfs to the Exercise_Data folder that your counts and metadata are in.
+
+
+
+
+
+
+
+
+# *** Exercise Solutions ***
+# **************************
+
+# *** Green ***
+# *************
+
+# 1. How many genes and samples are in this data set? 
+dim(HRVcounts)
+# 47,849 genes and 15 samples
+
+# 2. Set HRV, HEMT, and replicate as factors and create an HRVgroups dataframe.
+# Set the HRV level "Uninfected" as the reference by adding: 
+# , levels = c("Untreated", "Treated") after metadata2$HRV inside the factor command.
+HRV <- factor(HRVmetadata$HRV, levels = c("Uninfected", "Infected"))
+HEMT <- factor(HRVmetadata$HEMT)
+Replicate <- factor(HRVmetadata$Replicate)
+
+HRVgroups <- data.frame(Sample = rownames(HRVmetadata), HRV, HEMT, Replicate)
+
+# 3. Set the HRVcounts column names to be more informative,
+#    such as "HRV_HEMT_Replicate"
+HRVgroups$ColNames <- paste(HRVgroups$HRV, HRVgroups$HEMT, HRVgroups$Replicate, 
+                            sep = "_")
+colnames(HRVcounts) <- HRVgroups$ColNames
+colnames(HRVcounts)
+
+# 4. Make your DGE object and name it HRVDGE.
+HRVDGE <- DGEList(counts = HRVcounts, remove.zeros = TRUE, 
+                  genes = rownames(HRVcounts))
+
+# 5. Make your design matrix taking into account HRV and HEMT. 
+#    Name it HRVdesign and look at it.
+HRVdesign <- model.matrix(~ 0 + HRV + HEMT)
+rownames(HRVdesign) <- colnames(HRVDGE)
+HRVdesign
+
+# 6. Remove low expression genes, then calculate normalization factors and dispersion. Plot BCV 
+HRVkeep <- filterByExpr(HRVDGE, HRVdesign, min.count = 10, min.total.count = 15)
+HRVDGE <- HRVDGE[HRVkeep, ]
+
+HRVDGE <- calcNormFactors(HRVDGE)
+HRVDGE$samples
+
+HRVDGE <- estimateGLMCommonDisp(HRVDGE, HRVdesign, verbose = TRUE)
+HRVDGE <- estimateGLMTrendedDisp(HRVDGE, HRVdesign) 
+HRVDGE <- estimateGLMTagwiseDisp(HRVDGE, HRVdesign) 
+
+plotBCV(HRVDGE)
+
+# 7. Make a boxplot of normalized CPMs to see if normalization worked
+HRVCPM <- cpm(HRVDGE, normalized.lib.sizes = TRUE, log = TRUE)
+HRVCPM <- as.data.frame(HRVCPM)
+
+boxplot(HRVCPM, las = 2, ylab = "log2 CPM", main = "Normalized HRV Data")
+# It did, yay!
+
+
+# *** Blue ***
+# ************
+
+# 1. Make a contrast matrix to look at the effects of HRV in fection or Orkambi
+#    treatment.
+HRVcontrast.matrix <- makeContrasts(HRV_vs_Uninf = HRVInfected - HRVUninfected,
+                                    Ork_vs_None = HEMTOrkambi,
+                                    levels = HRVdesign)
+
+
+# 2. Fit a gene-wise negative binomial generalized linear model and conduct a likelihood ratio test for each comparison.
+# How many genes are differentialy expressed? How many are significant (p-val < 0.05 and FC > 1)?
+HRVfit <- glmFit(HRVDGE, HRVdesign, contrast = HRVcontrast.matrix)
+
+# DE genes with HRV infection (No Orkambi treatment)
+lrt_HRV <- glmLRT(HRVfit, contrast = HRVcontrast.matrix[,"HRV_vs_Uninf"]) 
+topTags(lrt_HRV)
+de_HRV <- decideTests(lrt_HRV, adjust.method = "fdr")
+summary(de_HRV)
+# 185 up-regulated and 6 down-regulated w/ HRV infection (No Orkambi treatment)
+
+Results_HRV <- as.data.frame(topTags(lrt_HRV, n = dim(HRVDGE)[1]))
+DE_HRV <- Results_HRV[Results_HRV$PValue < 0.05 & abs(Results_HRV$logFC) > 1, ]
+# 243 significant genes are significantly differentially expressed w/ HRV infection
+
+
+# DE genes of HRV infected cells with Orkambi treatment 
+lrt_HEMT <- glmLRT(HRVfit, contrast = HRVcontrast.matrix[,"Ork_vs_None"]) 
+topTags(lrt_HEMT)
+de_HEMT <- decideTests(lrt_HEMT, adjust.method = "fdr")
+summary(de_HEMT)
+# 2 up-regulated and 0 down-regulated w/ Orkambi treatment in HSV infected cells
+
+# But by looking at p-value and FC, we see a difference!
+# This is an example of how you can get a different result if you just look at FDR alone
+Results_HEMT <- as.data.frame(topTags(lrt_HEMT, n = dim(HRVDGE)[1]))
+DE_HEMT <- Results_HEMT[Results_HEMT$PValue < 0.05 & abs(Results_HEMT$logFC) > 1, ]
+# 9 significant genes are significantly differentially expressed w/ Orkambi 
+# treatment of HRV infected cells
+
+
+# 3. Save those top genes and plot an MA plot and a volcano plot for each comparison.
+detags_HRV <- DE_HRV$genes
+detags_HEMT <- DE_HEMT$genes
+
+# HRV comparison
+# MA Plot
+plotSmear(lrt_HRV, de.tags = detags_HRV, cex = 0.5, main = "DE Genes with HRV Infection")
+abline(h = c(-1, 1), col = "blue")
+legend("bottomright", legend = "DE genes (FC > 1, P-value < 0.05)", pch = 16, 
+       col = "red", bty = "n")
+
+# Volcano Plot
+plot(-log10(Results_HRV$PValue) ~ Results_HRV$logFC, 
+     xlab = "log2 fold change", ylab = "-log10 p-value", 
+     main = "DE Genes with HRV Infection", xlim = c(-10, 10))
+points(-log10(Results_HRV$PValue[Results_HRV$genes %in% detags_HRV]) ~ 
+         Results_HRV$logFC[Results_HRV$genes %in% detags_HRV], 
+       col = "red", pch = 16)
+abline(v = c(-1, 1), col = "blue")
+legend("topleft", legend = "DE genes (FC > 1, p < 0.05)", pch = 16, 
+       col = "red", bty = "n")
+
+
+# Orkambi comparison
+# MA Plot
+plotSmear(lrt_HEMT, de.tags = detags_HEMT, cex = 0.5, main = "DE Genes with Orkambi Treatment in HRV Infection")
+abline(h = c(-1, 1), col = "blue")
+legend("bottomright", legend = "DE genes (FC > 1, P-value < 0.05)", pch = 16, 
+       col = "red", bty = "n")
+
+# Volcano Plot
+plot(-log10(Results_HEMT$PValue) ~ Results_HEMT$logFC, 
+     xlab = "log2 fold change", ylab = "-log10 p-value", 
+     main = "DE Genes with Orkambi Treatment in HRV Infection", xlim = c(-10, 10))
+points(-log10(Results_HEMT$PValue[Results_HEMT$genes %in% detags_HEMT]) ~ 
+         Results_HEMT$logFC[Results_HEMT$genes %in% detags_HEMT], 
+       col = "red", pch = 16)
+abline(v = c(-1, 1), col = "blue")
+legend("topleft", legend = "DE genes (FC > 1, p < 0.05)", pch = 16, 
+       col = "red", bty = "n")
+
+
+
+# *** Black ***
+# *************
+
+
+# 1. Create a heatmap of only the top 10 most significant genes for each 
+# comparison. Display the gene names in the Orkambi heatmap. Save both heatmaps 
+# as pdfs to the Exercise_Data folder that your counts and metadata are in.
+
+# Heatmap of top 10 DE genes with HRV infection
+
+# First, figure out which genes are most significant by p-value 
+# and take the top 10
+HRV_Results_arranged <- arrange(DE_HRV, PValue)
+top10_HRV_Results <- HRV_Results_arranged[1:10, ]
+
+# Take just the gene names of these for our detags object
+top10_detags_HRV <- top10_HRV_Results$genes
+
+# Set annotation colors
+HRV_Colors <- as.vector(colnames(HRVCPM))
+HRV_Colors[grepl("Uninfected", HRV_Colors)] <- "Blue"
+HRV_Colors[grepl("Infected", HRV_Colors)] <- "Red"
+
+# Make and save your heatmap
+pdf("./Exercise_Data/HRV_heatmap.pdf")
+heatmap.2(as.matrix(HRVCPM[rownames(HRVCPM) %in% top10_detags_HRV, ]), 
+          scale = "row", trace = "none", labRow = rownames(HRVCPM), 
+          ColSideColors = HRV_Colors, srtCol = 45, margins = c(8, 6))
+dev.off()
+
+
+
+# Heatmap of top DE genes in HRV infected samples with Orkambi treatment
+
+# For this comparison, we don't even need to subset based on top p-value, 
+# as there were only 9 DE genes.
+
+HEMT_Colors <- as.vector(colnames(HRVCPM))
+HEMT_Colors[grepl("None", HEMT_Colors)] <- "Blue"
+HEMT_Colors[grepl("Orkambi", HEMT_Colors)] <- "Red"
+
+# Make and save your heatmap
+pdf("./Exercise_Data/HEMT_heatmap.pdf")
+heatmap.2(as.matrix(HRVCPM[rownames(HRVCPM) %in% detags_HEMT, ]), 
+          scale = "row", trace = "none", labRow = rownames(HRVCPM), 
+          ColSideColors = HEMT_Colors, srtCol = 45, margins = c(8, 6))
+dev.off()
+
+
+
+
+
+

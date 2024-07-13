@@ -1,8 +1,9 @@
 ---
-title: "R Notebook"
+title: "Group 1 Project"
 output:
   html_document:
     toc: true
+    toc_float: true
     df_print: paged
   html_notebook:
     toc: true
@@ -11,12 +12,15 @@ output:
     toc: true
 ---
 
-Load the libraries
+##Load the libraries and data
 
 ```{r, include=FALSE}
 library(clusterProfiler)
 library(org.Hs.eg.db)
 library(edgeR)
+library(gplots)
+library(tidyverse)
+
 counts <- read.csv("Group1.csv", row.names = 1)
 
 ```
@@ -39,8 +43,8 @@ groups <- data.frame(sample = colnames(counts), treatment, donors)
 cbind(groups,colnames(counts))
 
 ```
-#Part 1 – Exploratory Analysis
-#1.	Visualize your library sizes.
+##Part 1 – Exploratory Analysis
+###1.	Visualize your library sizes.
 ```{r}
 
 boxplot(colSums(counts) ~ donors)
@@ -58,7 +62,7 @@ boxplot(colSums(counts) ~ groups$sample)
 hist(log2(rowSums(counts)))
 ```
 
-#3.	Determine how many genes had zero counts and remove these genes (rows) from the data set. What does your count distribution look like before and after this?
+###3.	Determine how many genes had zero counts and remove these genes (rows) from the data set. What does your count distribution look like before and after this?
 
 ```{r}
 MinVals <- apply(counts, 1, min)
@@ -70,7 +74,7 @@ Exp <- counts[MinVals > 0, ]
 ExpLog2 <- log2(Exp)
 hist(rowMeans(ExpLog2), xlab = "Counts (log2)", main = "Expressed Genes")
 ```
-#4.	Make a boxplot of log2 raw counts after removing all genes that had zero counts. 
+###4.	Make a boxplot of log2 raw counts after removing all genes that had zero counts. 
 
 Plot "raw" (our log2 transformed) sample counts
 
@@ -78,7 +82,7 @@ Plot "raw" (our log2 transformed) sample counts
 boxplot(ExpLog2, ylab = "log2 counts", main = "Raw RNA-Seq Counts", las = 2)
 ```
 
-#5.	Make a Cluster Dendrogram of the raw data.
+###5.	Make a Cluster Dendrogram of the raw data.
 
 ```{r}
 RawDist <- dist(t(ExpLog2), method = "euclidean")
@@ -107,7 +111,7 @@ for(col in colnames(ExpNorm)){
 }
 ```
 
-#6.	Do a simple normalization of your data and visualize your normalized data with a boxplot of log2 raw counts and a cluster dendrogram. Did normalization change anything?
+###6.	Do a simple normalization of your data and visualize your normalized data with a boxplot of log2 raw counts and a cluster dendrogram. Did normalization change anything?
 ```{r}
 boxplot(ExpNorm, ylab = "log2 counts", main = "Normalized Counts", las = 2)
 ```
@@ -117,7 +121,7 @@ boxplot(ExpNorm, ylab = "log2 counts", main = "Normalized Counts", las = 2)
 NormDist <- dist(t(ExpNorm), method = "euclidean")
 plot(hclust(NormDist, method = "average"))
 ```
-#7 Make a PCA plot and use color to highlight groups
+###7 Make a PCA plot and use color to highlight groups
 ```{r}
 PCA <- prcomp(t(NormDist))
 plot(PCA$x[ , 1], PCA$x[ , 2], pch = 16)
@@ -135,3 +139,90 @@ plot(PCA$x[ , 1], PCA$x[ , 2], pch = 16, col = treatment,
      main = "Colored by Treatment")
 legend("bottomright", legend = unique(treatment), pch = 16, col = unique(treatment))
 ```
+
+#Part 2. Differential Gene Expression with edgeR
+##When creating the DGEList object, include the gene annotation information from the "Annotations.csv" file as your argument in “genes =”
+```{r}
+annotations <- read.csv(file = "Annotations.csv",
+                     header = TRUE, 
+                     row.names = 1)
+DGE <- DGEList(counts = counts, remove.zeros = TRUE, genes = annotations)
+```
+
+##Include both treatment and donor in your experimental design matrix.
+```{r}
+design <- model.matrix(~ 0 + treatment + donors, data = counts)
+rownames(design) <- colnames(DGE)
+design
+```
+ Remove low expression genes 
+```{r}
+keep <- filterByExpr(DGE, design, min.count = 10, min.total.count = 15)
+DGE <- DGE[keep, ] # Keep genes that meet our threshold!
+```
+ Take a look at the library sizes of each sample
+```{r}
+DGE$samples
+```
+ Normalize for different library sizes (TMM, trimmed mean of M-values)
+```{r}
+DGE <- calcNormFactors(DGE) # Calculates normalization factors and adds them to our DGE object
+DGE$samples
+```
+ Calculate overall dispersion
+ estimateGLMCommonDisp calculates within-group and between-group variability. 
+```{r}
+DGE <- estimateGLMCommonDisp(DGE, design, verbose = TRUE)
+```
+ Calculate dispersion trend based on gene abundance
+```{r}
+DGE <- estimateGLMTrendedDisp(DGE, design) 
+```
+ Calculate separate dispersion for each gene
+```{r}
+DGE <- estimateGLMTagwiseDisp(DGE, design) 
+```
+ Visualize dispersion
+```{r}
+plotBCV(DGE)
+
+```
+ Let's check that our normalization worked by plotting the log2(CPM) -- counts per million
+```{r}
+CPM <- cpm(DGE, normalized.lib.sizes = TRUE, log = TRUE)
+CPM <- as.data.frame(CPM)
+```
+ Visualize normalized data
+```{r}
+boxplot(CPM, las = 2, ylab = "log2 CPM", main = "Normalized Data")
+```
+###Contrast Matrix
+```{r}
+contrast.matrix <- makeContrasts(PA_vs_Unt = treatmentTreatment - treatmentUntreated,
+                                 levels = design)
+```
+
+##3.	When running the glmLRT function, be careful to use the correct name to specify the comparison of interest. For the purpose of this exercise, we are interested in the treatment effects.
+Fit a gene-wise negative binomial generalized linear model
+```{r}
+fit <- glmFit(DGE, design, contrast = contrast.matrix)
+lrt <- glmLRT(fit, contrast = contrast.matrix[,"PA_vs_Unt"]) 
+topTags(lrt)
+```
+###4a)	How many genes are differentially expressed (p<0.05 & log2 FC > 1) between the two genotypes? 
+```{r}
+de <- decideTests(lrt, adjust.method = "fdr")
+summary(de)
+```
+###4b)  Make an MA plot of edgeR results with DE genes (p<0.05 & log2 FC > 1) highlighted in red.
+```{r}
+plotSmear(lrt, de.tags = detags, cex = 0.5, main = "DE Genes with Pseudomonas Treatment")
+abline(h = c(-1, 1), col = "blue")
+legend("bottomright", legend = "DE genes (FC > 2, P-value < 0.05)", pch = 16, 
+       col = "red", bty = "n")
+
+```
+
+###c) Generate a Volcano plot of edgeR results. 
+
+###d) Is there an uneven number of genes that are up- or down-regulated when comparing the two genotypes?
