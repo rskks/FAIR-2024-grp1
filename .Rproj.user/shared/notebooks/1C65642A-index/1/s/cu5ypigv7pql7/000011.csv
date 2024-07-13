@@ -1,2 +1,0 @@
-"0","RawDist <- dist(t(ExpLog2), method = ""euclidean"")"
-"0","plot(hclust(RawDist, method = ""average""))"

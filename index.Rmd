@@ -140,7 +140,7 @@ plot(PCA$x[ , 1], PCA$x[ , 2], pch = 16, col = treatment,
 legend("bottomright", legend = unique(treatment), pch = 16, col = unique(treatment))
 ```
 
-#Part 2. Differential Gene Expression with edgeR
+##Part 2. Differential Gene Expression with edgeR
 ##When creating the DGEList object, include the gene annotation information from the "Annotations.csv" file as your argument in “genes =”
 ```{r}
 annotations <- read.csv(file = "Annotations.csv",
@@ -151,60 +151,72 @@ DGE <- DGEList(counts = counts, remove.zeros = TRUE, genes = annotations)
 
 ##Include both treatment and donor in your experimental design matrix.
 ```{r}
-design <- model.matrix(~ treatment + donors)
+design <- model.matrix(~ 0 + treatment + donors, data = counts)
 rownames(design) <- colnames(DGE)
 design
 ```
-# Remove low expression genes 
+ Remove low expression genes 
 ```{r}
 keep <- filterByExpr(DGE, design, min.count = 10, min.total.count = 15)
 DGE <- DGE[keep, ] # Keep genes that meet our threshold!
 ```
-# Take a look at the library sizes of each sample
+ Take a look at the library sizes of each sample
 ```{r}
 DGE$samples
 ```
-# Normalize for different library sizes (TMM, trimmed mean of M-values)
+ Normalize for different library sizes (TMM, trimmed mean of M-values)
 ```{r}
 DGE <- calcNormFactors(DGE) # Calculates normalization factors and adds them to our DGE object
 DGE$samples
 ```
-# Calculate overall dispersion
-# estimateGLMCommonDisp calculates within-group and between-group variability. 
+ Calculate overall dispersion
+ estimateGLMCommonDisp calculates within-group and between-group variability. 
 ```{r}
 DGE <- estimateGLMCommonDisp(DGE, design, verbose = TRUE)
 ```
-# Calculate dispersion trend based on gene abundance
+ Calculate dispersion trend based on gene abundance
 ```{r}
 DGE <- estimateGLMTrendedDisp(DGE, design) 
 ```
-# Calculate separate dispersion for each gene
+ Calculate separate dispersion for each gene
 ```{r}
 DGE <- estimateGLMTagwiseDisp(DGE, design) 
 ```
-# Visualize dispersion
+ Visualize dispersion
 ```{r}
 plotBCV(DGE)
 
 ```
-# Let's check that our normalization worked by plotting the log2(CPM) -- counts per million
+ Let's check that our normalization worked by plotting the log2(CPM) -- counts per million
 ```{r}
 CPM <- cpm(DGE, normalized.lib.sizes = TRUE, log = TRUE)
 CPM <- as.data.frame(CPM)
 ```
-# Visualize normalized data
+ Visualize normalized data
 ```{r}
 boxplot(CPM, las = 2, ylab = "log2 CPM", main = "Normalized Data")
 ```
 ###Contrast Matrix
 ```{r}
-contrast.matrix <- makeContrasts(PA_vs_Unt = treatmentUntreated,
+contrast.matrix <- makeContrasts(PA_vs_Unt = treatmentTreatment - treatmentUntreated,
                                  levels = design)
 ```
 
-# Fit a gene-wise negative binomial generalized linear model
+##3.	When running the glmLRT function, be careful to use the correct name to specify the comparison of interest. For the purpose of this exercise, we are interested in the treatment effects.
+Fit a gene-wise negative binomial generalized linear model
 ```{r}
 fit <- glmFit(DGE, design, contrast = contrast.matrix)
 lrt <- glmLRT(fit, contrast = contrast.matrix[,"PA_vs_Unt"]) 
 topTags(lrt)
 ```
+###4a)	How many genes are differentially expressed (p<0.05 & log2 FC > 1) between the two genotypes? 
+```{r}
+de <- decideTests(lrt, adjust.method = "fdr")
+summary(de)
+```
+###4b)  Make an MA plot of edgeR results with DE genes (p<0.05 & log2 FC > 1) highlighted in red.
+
+
+###c) Generate a Volcano plot of edgeR results. 
+
+###d) Is there an uneven number of genes that are up- or down-regulated when comparing the two genotypes?

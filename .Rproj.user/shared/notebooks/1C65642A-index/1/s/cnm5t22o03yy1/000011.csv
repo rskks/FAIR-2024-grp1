@@ -1,2 +1,0 @@
-"0","DGE <- calcNormFactors(DGE) # Calculates normalization factors and adds them to our DGE object"
-"0","DGE$samples"

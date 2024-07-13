@@ -1,3 +1,0 @@
-"0","groups <- data.frame(sample = colnames(counts), treatment, donors)"
-"0",""
-"0","cbind(groups,colnames(counts))"

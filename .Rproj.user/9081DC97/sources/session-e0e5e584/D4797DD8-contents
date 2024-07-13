@@ -140,7 +140,7 @@ plot(PCA$x[ , 1], PCA$x[ , 2], pch = 16, col = treatment,
 legend("bottomright", legend = unique(treatment), pch = 16, col = unique(treatment))
 ```
 
-#Part 2. Differential Gene Expression with edgeR
+##Part 2. Differential Gene Expression with edgeR
 ##When creating the DGEList object, include the gene annotation information from the "Annotations.csv" file as your argument in “genes =”
 ```{r}
 annotations <- read.csv(file = "Annotations.csv",
@@ -215,13 +215,7 @@ de <- decideTests(lrt, adjust.method = "fdr")
 summary(de)
 ```
 ###4b)  Make an MA plot of edgeR results with DE genes (p<0.05 & log2 FC > 1) highlighted in red.
-```{r}
-plotSmear(lrt, de.tags = detags, cex = 0.5, main = "DE Genes with Pseudomonas Treatment")
-abline(h = c(-1, 1), col = "blue")
-legend("bottomright", legend = "DE genes (FC > 2, P-value < 0.05)", pch = 16, 
-       col = "red", bty = "n")
 
-```
 
 ###c) Generate a Volcano plot of edgeR results. 
 

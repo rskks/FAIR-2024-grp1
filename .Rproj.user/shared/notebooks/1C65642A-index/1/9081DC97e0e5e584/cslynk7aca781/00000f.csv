@@ -1,5 +1,0 @@
-"0","ExpNorm <- ExpLog2"
-"0",""
-"0","for(col in colnames(ExpNorm)){"
-"0","  ExpNorm[, col] <- ExpLog2[, col] + CorrectionFactors[col]"
-"0","}"

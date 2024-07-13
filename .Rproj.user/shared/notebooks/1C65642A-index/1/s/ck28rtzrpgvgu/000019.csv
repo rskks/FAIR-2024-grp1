@@ -1,2 +1,0 @@
-"0","ExpLog2 <- log2(Exp)"
-"0","hist(rowMeans(ExpLog2), xlab = ""Counts (log2)"", main = ""Expressed Genes"")"
