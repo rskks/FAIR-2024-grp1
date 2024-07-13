@@ -1,0 +1,9 @@
+"0","```r
+table(labels_df$class_label,
+      labels_df$predicted_label_model2)
+```"
+"1","         
+          case control
+  case     142      28
+  control    8      22
+"

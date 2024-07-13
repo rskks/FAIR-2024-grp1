@@ -1,0 +1,14 @@
+"0","```r
+# Read in the labels for the models and call it `labels_df`
+labels_df <- readr::read_tsv(file.path(\"results\", 
+                                       \"case-vs-control\",
+                                       \"case_control_labels.tsv\"))
+```"
+"1","Rows: 200 Columns: 4
+── Column specification ─────────────────────────────────────────────────────────────────────────────────────────
+Delimiter: \"\t\"
+chr (4): sample_id, class_label, predicted_label_model1, predicted_label_model2
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+"

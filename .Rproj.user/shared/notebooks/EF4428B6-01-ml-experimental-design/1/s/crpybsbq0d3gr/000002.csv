@@ -1,0 +1,32 @@
+"0","```r
+confusionMatrix(data = predict(svm_result, newdata = metabric_test),
+                reference = factor(metabric_meta_df$tumor_label[-train_index]))
+```"
+"1","Confusion Matrix and Statistics
+
+          Reference
+Prediction Normal Tumor
+    Normal     28     1
+    Tumor       0   397
+                                         
+               Accuracy : 0.9977         
+                 95% CI : (0.987, 0.9999)
+    No Information Rate : 0.9343         
+    P-Value [Acc > NIR] : 8.178e-12      
+                                         
+                  Kappa : 0.9812         
+                                         
+ Mcnemar's Test P-Value : 1              
+                                         
+            Sensitivity : 1.00000        
+            Specificity : 0.99749        
+         Pos Pred Value : 0.96552        
+         Neg Pred Value : 1.00000        
+             Prevalence : 0.06573        
+         Detection Rate : 0.06573        
+   Detection Prevalence : 0.06808        
+      Balanced Accuracy : 0.99874        
+                                         
+       'Positive' Class : Normal         
+                                         
+"

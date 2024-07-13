@@ -1,0 +1,403 @@
+# Exploratory Data Analysis
+# FAIR Bioinformatics - July 11, 2024, Lily Charpentier
+
+# In previous modules, we've seen ways to begin to process our
+# raw data for eventual analysis, and now we have a counts file. Yay!!!
+# But now what?
+
+# Before you dive right into differential gene expression analysis,
+# you're going to want to take a look at your data.
+# This can inform you of a lot of details that can help you to interpret 
+# your results. 
+# This beginning "exploratory analysis" will not change the structure of your data, 
+# and we will proceed with the raw counts when we start our differential gene 
+# expression analysis, but it will help identify patterns and sources of 
+# variation within our data.
+
+# We will look at a couple sources of variation: 
+# - Technical variation (Sequencing depth between samples)
+# - Variation between and within sample groups (Donor and treatment) 
+
+# As an example, we will be looking at counts from
+# Goodale et al., Toxicol Appl Pharmacol., 2017 (PMID: 28625800)
+# "Arsenic alters transcriptional responses to Pseudomonas aeruginosa infection 
+# and decreases antimicrobial defense of human airway epithelial cells"
+# Where we will look at differential gene expression in human airway epithelial 
+# cells with 0, 5, 10 or 50 ug/L arsenic and/or P. aeruginosa exposure
+# All information/data is available through NCBI GEO: GSE97036
+
+# This is data resulting from a similar salmon/tximport analysis that we 
+# learned about yesterday. Specifically, the analysis was done by and
+# data obtained from refine.bio, which we will learn more about later in 
+# the course!
+
+# To start, read in counts
+counts <- read.csv(file = "GSE97036_raw_counts.csv",
+                   header = TRUE, 
+                   row.names = 1)
+
+
+# If you were reading in counts from your own data straight from tximport,
+# you would read it in with a command such as:
+# txi <- readRDS("data_tximport.RDS")
+# counts <- txi$counts
+# Oleg - I did so here it is:
+txi <- readRDS("goodale_data_tximport.RDS")
+counts <- txi$counts
+# Oleg - tought luck - no metadata
+# Load in sample metadata
+metadata <- read.csv(file = "GSE97036_metadata.csv",
+                     header = TRUE, 
+                     row.names = 1)
+
+# In order to make sure each sample is annotated with the correct information, 
+# we need to define our groups/treatments and set these as factors.
+Donor <- factor(metadata$Donor)
+Arsenic <- factor(metadata$Arsenic)
+Pseudomonas <- factor(metadata$Pseudomonas, levels = c("Untreated", "Treated"))
+
+# If you only have a few samples, don't have a metadata file, 
+# and know what order everything is in, you can just write out the factor assignment
+# Ex. If you have 6 samples and you know the first 3 are from donor A and 
+# the second 3 are from donor B, you can write:
+# Donor <- factor(c("A", "A", "A", "B", "B", "B"))
+# OR
+# Donor <- factor(c(rep("A", 3), rep("B", 3)))
+
+groups <- data.frame(Sample = rownames(metadata), Donor, Arsenic, Pseudomonas)
+
+# Check it out to make sure everything is in the same order as your samples in 
+# counts
+cbind(groups, colnames(counts))
+# Looks good!
+
+# Let's rename the counts columns to something more informative
+groups$ColNames <- paste(groups$Donor, groups$Arsenic, groups$Pseudomonas, 
+                         sep = "_")
+colnames(counts) <- groups$ColNames
+colnames(counts)
+
+
+# Let's take a look at our data!
+head(counts)
+# How many genes and samples do we have?
+dim(counts) # 43,363 genes and 43 samples
+
+# Let's start looking at technical variation within our data
+# Total counts per sample (library size)
+barplot(colSums(counts), las = 2)
+
+# We can see a lot of variation in library sizes between our samples
+
+# Are there any systematic differences in total counts by Pseudomonas or 
+# arsenic treatment? What about by donor?
+
+# Pseudomonas
+boxplot(colSums(counts) ~ treatment)
+t.test(colSums(counts) ~ treatment)
+
+# Arsenic
+boxplot(colSums(counts) ~ donors)
+#why?
+summary(lm(colSums(counts) ~ donors))
+#doing anova?
+TukeyHSD(aov(colSums(counts) ~ donors))
+
+# Donor
+boxplot(colSums(counts) ~ donors)
+TukeyHSD(aov(colSums(counts) ~ donors))
+
+# Many stats tests assume a normal distribution of data. Do our raw counts look 
+# normally distributed?
+
+# Count distribution
+hist(log2(rowSums(counts)))
+
+# Let's see if we can fix up that distribution.
+# Excluding low abundance genes
+MinVals <- apply(counts, 1, min) # Find the minimum value in each row
+
+# How many genes have 0 counts?
+sum(MinVals == 0) # 27,613 genes. Holy moley, that's a lot that we don't want.
+Exp <- counts2[MinVals > 0, ] # Remove rows (transcripts) with zero counts
+
+# The most common way to begin to process your data is through log2 transformation.
+# This will give our counts data the normal distribution that our subsequent
+# gene expression analysis will expect
+
+# Log2 transformation
+ExpLog2 <- log2(Exp)
+hist(rowMeans(ExpLog2), xlab = "Counts (log2)", main = "Expressed Genes")
+# That's looking a lot better!
+
+# Now let's take a look at these counts across our samples
+
+# Plot "raw" (our log2 transformed) sample counts
+boxplot(ExpLog2, ylab = "log2 counts", main = "Raw RNA-Seq Counts", las = 2)
+
+# With this "uneven" distribution of counts, how do our samples cluster?
+# Do donors and treatments cluster together? Are there any outliers 
+# before normalization?
+
+# Dist calculates distances between rows, use t() to transpose 
+#OLEG - this is clustering based on library size
+RawDist <- dist(t(ExpLog2), method = "euclidean")
+plot(hclust(RawDist, method = "average"))
+
+# Although most like samples are clustering together,
+# we can see some samples not clustering by treatment or donor.
+# So, we will need to normalize our data!
+
+# Simple normalization 
+# 2 means column
+SampleMedians <- apply(ExpLog2, 2, median) # Find the median value of each column - 2 means column
+GrandMedian <- mean(SampleMedians) # Take the average of those
+CorrectionFactors <- GrandMedian - SampleMedians # Calculate correction factor to apply to data
+CorrectionFactors
+
+# These correction factors will align the medians of all of our samples
+# This changes our counts just enough to correct for variability between
+# samples/groups without loosing any actual effects of changes in gene expression.
+
+# Loop through each column (sample) and fill in medians adjusted with 
+# sample correction factor
+
+ExpNorm <- ExpLog2
+
+for(col in colnames(ExpNorm)){
+  ExpNorm[, col] <- ExpLog2[, col] + CorrectionFactors[col]
+}
+
+# When visualizing our normalized data, we want to see the medians all in a 
+# straight line
+# Boxplot of normalized counts
+boxplot(ExpNorm, ylab = "log2 counts", main = "Normalized Counts", las = 2)
+
+# And do our treatments cluster together better now?
+# Cluster dendrogram of normalized data
+NormDist <- dist(t(ExpNorm), method = "euclidean")
+plot(hclust(NormDist, method = "average"))
+# Yes, yes they do
+
+# We can better visualize this clustering with PCA plots
+
+# PCA Plot
+PCA <- prcomp(t(NormDist))
+plot(PCA$x[ , 1], PCA$x[ , 2], pch = 16)
+
+# But that doesn't tell you too much, does it?
+# You can color the PCA plot by factor to visualize what specific samples
+# may be outliers/driving variation in your data
+
+# By donor
+plot(PCA$x[ , 1], PCA$x[ , 2], pch = 16, col = donors, 
+     main = "Colored by Donor")
+# You can even add a legend if you'd like
+legend("bottomright", legend = unique(donors), pch = 16, col = unique(donors))
+
+# By arsenic treatment
+plot(PCA$x[ , 1], PCA$x[ , 2], pch = 16, col = treatment, 
+     main = "Colored by Treatment")
+
+# By pseudomonas treatment
+plot(PCA$x[ , 1], PCA$x[ , 2], pch = 16, col = Pseudomonas, 
+     main = "Colored by Pseudomonas")
+
+
+# Take home message:
+
+# Always perform an exploratory analysis before your differential gene 
+# expression analysis!
+# This helps you to:
+# 1. Make sure your experiment worked
+# 2. Find sources of variation within your data
+# 3. Find samples that may be outliers in your data
+# 4. Visualize your raw data before normalization and your normalized
+#    data before you perform differential expression analysis or any 
+#    statistical tests
+
+
+
+
+# ******* Exercises ********
+# **************************
+
+# For this module, we just have green and blue exercises
+
+# Let's use some data from the package dslabs
+
+# install.packages("dslabs")
+library(dslabs)
+
+# We will use the tissue gene expression datatset
+# Here's some info about it!
+?tissue_gene_expression
+
+# Our raw counts
+counts2 <- as.data.frame(t(tissue_gene_expression$x))
+
+# Tissue type already as a factor
+Tissue <- tissue_gene_expression$y
+
+
+# *** Green ***
+# *************
+
+# 1. How many genes are in the data set?
+
+dim(counts2)# - 500
+# 2. How many samples are in the data set?
+
+dim(counts2)# - 189
+# 3. How many samples are there from each tissue? 
+
+samplenames <- colnames(counts2)
+samplenames2 <- gsub("_.*$","",samplenames)
+table(samplenames2)
+#    Hint: the table() function will be helpful.
+
+# 4. Visualize the library size (total count) of each sample.
+barplot(colSums(counts2), las = 2)
+
+# 5. Make a box plot for all the raw counts by sample.
+
+boxplot(counts2)
+# 6. What do you notice about the data? Does the data need to be log transformed? 
+#    Do you need to filter out low expression genes? 
+#    Have the data already been normalized?
+#    No need to plot anything else in this question. What do you notice about the
+#    boxplot you just made?
+
+
+# *** Blue ***
+# *************
+
+# 1. Perform some basic exploratory analysis to decide if the data need to be 
+#    log transformed or normalized and whether low expression genes need to be 
+#    filtered out.
+hist(log2(rowSums(counts2)))
+# 2. Are there any significant differences in total counts/library size between 
+#    the different tissues?
+MinVals2 <- apply(counts2, 1, min)
+sum(MinVals2 == 0)
+
+# 3. Make a cluster dendrogram of the data.
+hist(log2(rowSums(counts2)))
+
+# 4. Perform a simple normalization and cluster the data again. 
+#    Did the normalization change the clustering?
+Exp<- counts2[MinVals2 >0,]
+ExpLog2 <- log2(Exp)
+hist(rowMeans(ExpLog2), xlab = "Counts (log2)", main = "Expressed Genes")
+
+# 5. Make a box plot of the normalized data.
+boxplot(ExpLog2, ylab = "log2 counts", main = "Raw RNA-Seq Counts", las = 2)
+
+# 6. Make a PCA plot of the normalized data and color it by tissue.
+#    What tissue is all by itself in the upper right corner?
+
+
+
+
+
+# ******* Exercise Solutions ********
+# ***********************************
+
+# *** Green ***
+# *************
+
+# 1. How many genes are in the data set?
+dim(counts2) # 500
+
+# 2. How many samples are in the data set?
+dim(counts2) # 189
+
+# 3. How many samples are there from each tissue? 
+#    Hint: the table() function will be helpful.
+table(Tissue)
+# 38 cerebellum, 34 colon, 15 endometrium, 31 hippocampus, 39 kidney, 26 liver, 6 placenta
+
+# 4. Visualize the library size (total count) of each sample.
+barplot(colSums(counts2), las = 2)
+
+# 5. Make a box plot for all the raw counts by sample.
+boxplot(counts2, ylab="Counts", main="Raw RNA-Seq Counts", las=2)
+
+# 6. What do you notice about the data? Does the data need to be log transformed? 
+#    Do you need to filter out low expression genes? 
+#    Have the data already been normalized?
+#    No need to plot anything else in this question, what do you notice about the
+#    boxplot you just made?
+
+# Look at those medians all over the place! It definitely hasn't been normalized.
+# Definitely should be log2 transformed, possibly filtered for low expression, 
+# and normalized!
+
+
+# *** Blue ***
+# *************
+
+# 1. Perform some basic exploratory analysis to decide if the data need to be 
+#    log transformed or normalized and whether low expression genes need to be 
+#    filtered out.
+
+# Count distribution
+hist(log2(rowSums(counts2)))
+# Actually looks pretty good! Do we even need to filter out any low abundance
+# transcripts? It doesn't look like there's any there. But, should check to
+# make sure.
+
+# How many genes have 0 counts?
+MinVals2 <- apply(counts2, 1, min)
+sum(MinVals2 == 0) # None! So we don't have to filter any out
+
+# Lets look at our counts by sample
+TissueExpLog2 <- log2(counts2)
+boxplot(TissueExpLog2, ylab="log2 Counts", main="log2 RNA-Seq Counts", las=2)
+# Will still need normalization, log2 doesn't completely fix it!
+
+# 2. Are there any significant differences in total counts/library size between 
+#    the different tissues?
+boxplot(colSums(counts2) ~ Tissue)
+TukeyHSD(aov(colSums(counts2) ~ Tissue))
+# Oh yeah. So much variation. Normalization is a must with this data.
+
+# 3. Make a cluster dendrogram of the data.
+RawDist2 <- dist(t(TissueExpLog2), method = "euclidean")
+plot(hclust(RawDist2, method = "average"))
+
+# 4. Perform a simple normalization and cluster the data again. 
+#    Did the normalization change the clustering?
+
+# Simple normalization
+SampleMedians2 <- apply(TissueExpLog2, 2, median)
+GrandMedian2 <- mean(SampleMedians2)
+CorrectionFactors2 <- GrandMedian2 - SampleMedians2
+CorrectionFactors2
+
+ExpNorm2 <- TissueExpLog2
+
+for(col in colnames(ExpNorm2)){
+  ExpNorm2[, col] <- TissueExpLog2[, col] + CorrectionFactors2[col]
+}
+
+# Now look at the clustering
+NormDist2 <- dist(t(ExpNorm2), method = "euclidean")
+plot(hclust(NormDist2, method = "average"))
+
+# I know there's a lot there, but yes! It did work!
+
+# 5. Make a box plot of the normalized data.
+boxplot(ExpNorm2, ylab = "log2 counts", main = "Normalized Counts", las = 2)
+# Beautiful. The medians look much better now.
+
+# 6. Make a PCA plot of the normalized data and color it by tissue.
+#    What tissue is all by itself in the upper right corner?
+PCA2 <- prcomp(t(NormDist2))
+plot(PCA2$x[ , 1], PCA2$x[ , 2], pch = 16, col = Tissue, 
+     main = "Colored by Tissue")
+legend("topleft", legend = unique(Tissue), pch = 16, col = unique(Tissue))
+
+# The liver is the one by itself!
+
+

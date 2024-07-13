@@ -1,0 +1,37 @@
+"0","```r
+svm_tuning_cv_results <- train(x = metabric_train, 
+                               y = metabric_meta_df$tumor_label[train_index], 
+                               method = \"svmLinear\", 
+                               # Values to try for C
+                               tuneGrid = data.frame(C = c(0.001, 
+                                                           0.1, 
+                                                           1, 
+                                                           10, 
+                                                           100, 
+                                                           1000)),
+                               trControl =trainControl(method = \"repeatedcv\",
+                                                       number = 5,  # 5-fold cross-validation
+                                                       repeats = 5,  # 5x repeats
+                                                       returnData = FALSE),
+                               metric = \"Kappa\")
+
+svm_tuning_cv_results
+```"
+"1","Support Vector Machines with Linear Kernel 
+
+No pre-processing
+Resampling: Cross-Validated (5 fold, repeated 5 times) 
+Summary of sample sizes: 1368, 1368, 1369, 1368, 1367, 1367, ... 
+Resampling results across tuning parameters:
+
+  C      Accuracy   Kappa    
+  1e-03  0.9988311  0.9905611
+  1e-01  0.9988311  0.9905611
+  1e+00  0.9988311  0.9905611
+  1e+01  0.9988311  0.9905611
+  1e+02  0.9988311  0.9905611
+  1e+03  0.9988311  0.9905611
+
+Kappa was used to select the optimal model using the largest value.
+The final value used for the model was C = 0.001.
+"

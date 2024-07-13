@@ -1,0 +1,25 @@
+"0","```r
+if (!(\"magrittr\" %in% installed.packages())) {
+  install.packages(\"tidyverse\")  # We'll want to make sure dplyr is installed, too
+}
+library(magrittr)
+
+if (!(\"caret\" %in% installed.packages())) {
+  install.packages(\"caret\")
+}
+library(caret)
+```"
+"1","Loading required package: ggplot2
+Need help? Try Stackoverflow: https://stackoverflow.com/tags/ggplot2
+Loading required package: lattice
+"
+"0","```r
+if (!(\"kernlab\" %in% installed.packages())) {
+  install.packages(\"kernlab\")
+}
+
+if (!(\"vembedr\" %in% installed.packages())) {
+  install.packages(\"vembedr\")
+}
+library(\"vembedr\")
+```"

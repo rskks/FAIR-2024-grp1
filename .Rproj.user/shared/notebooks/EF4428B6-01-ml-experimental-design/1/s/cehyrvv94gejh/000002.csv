@@ -1,0 +1,7 @@
+"0","```r
+model2_correct <- apply(labels_df, 1, 
+                       function(x) x[\"predicted_label_model2\"] == x[\"class_label\"])
+(sum(model2_correct) / nrow(labels_df)) * 100
+```"
+"1","[1] 82
+"

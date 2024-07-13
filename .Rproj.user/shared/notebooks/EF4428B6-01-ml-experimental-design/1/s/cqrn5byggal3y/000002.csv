@@ -1,0 +1,19 @@
+"0","```r
+# Set up cross-validation
+cv_control <- trainControl(method = \"cv\",
+                           number = 5,  # 5-fold cross-validation
+                           returnData = FALSE)
+
+# Run 5-fold cross-valdiation
+svm_cv_results <- train(x = t_metabric_exprs,  # All expression data
+                        y = metabric_meta_df$tumor_label,  # All labels
+                        # The type of classifier
+                        method = \"svmLinear\", 
+                        # Use the default value for C
+                        tuneGrid = data.frame(.C = 1),  
+                        # 5-fold CV as specified with trainControl()
+                        trControl = cv_control,
+                        # We have a class imbalance problem!
+                        # Use Kappa instead of accuracy.
+                        metric = \"Kappa\")  
+```"

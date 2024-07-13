@@ -1,0 +1,12 @@
+"0","```r
+# This will return a logical vector that indicates whether (TRUE) or not (FALSE)
+# The predicted label for a sample from model 1 is the same as the actual class 
+# label
+model1_correct <- apply(labels_df, 1, 
+                        function(x) x[\"predicted_label_model1\"] == x[\"class_label\"])
+
+# Take a look at the first 6 values for this vector
+head(model1_correct)
+```"
+"1","[1] TRUE TRUE TRUE TRUE TRUE TRUE
+"

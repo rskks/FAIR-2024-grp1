@@ -1,0 +1,25 @@
+---
+title: "GrpprjctOleg"
+author: "rskks"
+date: "2024-07-13"
+output: html_document
+---
+
+Load the data
+
+```{r}
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(edgeR)
+counts <- read.csv("Group1.csv", row.names = 1)
+
+```
+
+```{r}
+treatment_pattern <- (rep(c("Untreated", "Treatment"), times = 9))
+treatment <- factor(c(treatment_pattern))
+
+donor_pattern <- c(rep("M24", times = 6), rep("M31", times = 6), rep("M32", times = 6))
+donors <- factor(c(donor_pattern))
+
+```

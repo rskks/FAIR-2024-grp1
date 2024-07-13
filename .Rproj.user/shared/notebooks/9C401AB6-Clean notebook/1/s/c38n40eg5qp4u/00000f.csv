@@ -1,0 +1,7 @@
+"0","MinVals <- apply(counts, 1, min)"
+"0","sum(MinVals == 0) "
+"1","[1]"
+"1"," 24868"
+"1","
+"
+"0","Exp <- counts[MinVals > 0, ]"

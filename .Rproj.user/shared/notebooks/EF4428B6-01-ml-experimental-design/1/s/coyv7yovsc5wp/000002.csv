@@ -1,0 +1,18 @@
+"0","```r
+# This is a tab-delimited text file without a column name in the first column
+metabric_exprs_df <- readr::read_tsv(file.path(\"data\",
+                                               \"expression\",
+                                               \"METABRIC_dataset.pcl\")) %>%
+  tibble::column_to_rownames(\"...1\")
+```"
+"1","New names:
+• `` -> `...1`
+Rows: 2520 Columns: 2137
+── Column specification ─────────────────────────────────────────────────────────────────────────────────────────
+Delimiter: \"\t\"
+chr    (1): ...1
+dbl (2136): MB-0362, MB-0346, MB-0386, MB-0574, MB-0185, MB-0503, MB-0641, MB-0201, MB-0218, MB-0316, MB-0189...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+"

@@ -1,0 +1,37 @@
+"0","```r
+# confusionMatrix() wants factors
+# data should be \"a factor of predicted classes (for the default method)\"
+# and reference should be \"a factor of classes to be used as the true results\"
+confusionMatrix(data = factor(labels_df$predicted_label_model1,
+                              levels = c(\"case\", \"control\")),
+                reference = factor(labels_df$class_label,
+                                   levels = c(\"case\", \"control\")))
+```"
+"1","Confusion Matrix and Statistics
+
+          Reference
+Prediction case control
+   case     170      30
+   control    0       0
+                                          
+               Accuracy : 0.85            
+                 95% CI : (0.7928, 0.8965)
+    No Information Rate : 0.85            
+    P-Value [Acc > NIR] : 0.5485          
+                                          
+                  Kappa : 0               
+                                          
+ Mcnemar's Test P-Value : 1.192e-07       
+                                          
+            Sensitivity : 1.00            
+            Specificity : 0.00            
+         Pos Pred Value : 0.85            
+         Neg Pred Value :  NaN            
+             Prevalence : 0.85            
+         Detection Rate : 0.85            
+   Detection Prevalence : 1.00            
+      Balanced Accuracy : 0.50            
+                                          
+       'Positive' Class : case            
+                                          
+"

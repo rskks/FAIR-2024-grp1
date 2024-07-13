@@ -1,0 +1,7 @@
+"0","```r
+table(metabric_meta_df$tumor_label)
+```"
+"1","
+Normal  Tumor 
+   144   1992 
+"

@@ -1,0 +1,10 @@
+"0","```r
+svm_result <- train(x = metabric_train,  # Transposed expression data - training only
+                    # Tumor v. normal - training only
+                    y = metabric_meta_df$tumor_label[train_index],
+                    # The type of classifier - SVM w/ linear kernel
+                    method = \"svmLinear\", 
+                    # This is telling train not to do any parameter tuning
+                    trControl = trainControl(method = \"none\",
+                                             returnData = FALSE))
+```"

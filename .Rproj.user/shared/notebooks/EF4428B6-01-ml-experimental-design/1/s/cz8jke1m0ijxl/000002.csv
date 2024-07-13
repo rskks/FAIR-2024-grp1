@@ -1,0 +1,7 @@
+"0","```r
+table(tcga_meta_df$Type)
+```"
+"1","
+           metastatic                 tumor tumor-adjacent normal 
+                    3                   522                    22 
+"

@@ -1,0 +1,5 @@
+"0","```r
+sum(c(TRUE, FALSE, TRUE, TRUE, FALSE))
+```"
+"1","[1] 3
+"

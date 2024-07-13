@@ -1,0 +1,4 @@
+"0","```r
+hist(Random, breaks = 20)
+abline(v=mean(Random), col=\"red\", lty=\"dashed\", lwd=3)
+```"

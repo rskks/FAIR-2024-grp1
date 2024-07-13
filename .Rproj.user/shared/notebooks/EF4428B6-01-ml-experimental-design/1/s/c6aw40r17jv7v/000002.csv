@@ -1,0 +1,5 @@
+"0","```r
+identical(colnames(t_metabric_exprs), colnames(t_tcga_exprs))
+```"
+"1","[1] TRUE
+"

@@ -1,0 +1,8 @@
+"0","```r
+Sys.time()
+```"
+"1","[1] \"2024-07-11 08:53:48 EDT\"
+"
+"0","```r
+# Use `r Sys.time()` outside of code chunk to display the current date and time inline!
+```"

@@ -1,0 +1,34 @@
+"0","```r
+confusionMatrix(data = factor(labels_df$predicted_label_model2,
+                              levels = c(\"case\", \"control\")),
+                reference = factor(labels_df$class_label,
+                                   levels = c(\"case\", \"control\")))
+```"
+"1","Confusion Matrix and Statistics
+
+          Reference
+Prediction case control
+   case     142       8
+   control   28      22
+                                          
+               Accuracy : 0.82            
+                 95% CI : (0.7596, 0.8706)
+    No Information Rate : 0.85            
+    P-Value [Acc > NIR] : 0.898723        
+                                          
+                  Kappa : 0.4462          
+                                          
+ Mcnemar's Test P-Value : 0.001542        
+                                          
+            Sensitivity : 0.8353          
+            Specificity : 0.7333          
+         Pos Pred Value : 0.9467          
+         Neg Pred Value : 0.4400          
+             Prevalence : 0.8500          
+         Detection Rate : 0.7100          
+   Detection Prevalence : 0.7500          
+      Balanced Accuracy : 0.7843          
+                                          
+       'Positive' Class : case            
+                                          
+"

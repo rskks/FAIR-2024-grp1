@@ -1,0 +1,7 @@
+"0","```r
+boxplot(log2(-1:10))
+```"
+"1","Warning in boxplot(log2(-1:10)) : NaNs produced
+Warning in bplt(at[i], wid = width[i], stats = z$stats[, i], out = z$out[z$group ==  :
+  Outlier (-Inf) in boxplot 1 is not drawn
+"

@@ -1,0 +1,7 @@
+"0","```r
+table(tcga_meta_df$tumor_labels)
+```"
+"1","
+Normal  Tumor 
+    22    525 
+"

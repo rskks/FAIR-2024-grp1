@@ -1,0 +1,36 @@
+"0","```r
+# A tab-delimited file without a column name in the first column
+tcga_exprs_df <- readr::read_tsv(file.path(\"data\", 
+                                           \"expression\", 
+                                           \"TCGA_dataset.pcl\")) %>%
+  tibble::column_to_rownames(\"...1\")
+```"
+"1","New names:
+• `` -> `...1`
+Rows: 2520 Columns: 548
+── Column specification ─────────────────────────────────────────────────────────────────────────────────────────
+Delimiter: \"\t\"
+chr   (1): ...1
+dbl (547): TCGA-A1-A0SD-01A-11R-A115-07, TCGA-A1-A0SE-01A-11R-A084-07, TCGA-A1-A0SH-01A-11R-A084-07, TCGA-A1-...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+"
+"0","```r
+# Transpose the matrix so samples are rows and genes are columns
+t_tcga_exprs <- t(as.matrix(tcga_exprs_df))
+
+# Read in the metadata
+tcga_meta_df <- readr::read_tsv(file.path(\"data\", 
+                                          \"metadata\", 
+                                          \"TCGA_subtype_label.txt\"))
+```"
+"1","Rows: 547 Columns: 4
+── Column specification ─────────────────────────────────────────────────────────────────────────────────────────
+Delimiter: \"\t\"
+chr (3): Sample, Type, PAM50
+dbl (1): Siglust
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+"

@@ -1,0 +1,5 @@
+"0","```r
+identical(metabric_meta_df$sample_id, rownames(t_metabric_exprs))
+```"
+"1","[1] TRUE
+"

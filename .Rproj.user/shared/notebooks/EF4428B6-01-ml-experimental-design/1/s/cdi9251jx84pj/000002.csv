@@ -1,0 +1,15 @@
+"0","```r
+# Set the seed for reproducibility - there is random sampling that takes place
+# in the next step!
+set.seed(2021)
+
+# Get the index of samples to include in the training sets
+train_index <- createDataPartition(y = metabric_meta_df$tumor_label,
+                                   p = 0.8, 
+                                   times = 1,
+                                   list = FALSE)
+
+# Split up the dataset into training and testing
+metabric_train <- t_metabric_exprs[train_index, ]
+metabric_test <- t_metabric_exprs[-train_index, ]
+```"

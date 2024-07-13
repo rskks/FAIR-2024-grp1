@@ -1,0 +1,17 @@
+"0","```r
+# This is a space-delimited text file with no header row
+metabric_meta_df <- readr::read_delim(file.path(\"data\", 
+                                                \"metadata\",
+                                                \"metabric_tumor_normal_label.txt\"),
+                                      col_names = FALSE,
+                                      delim = \" \") %>%
+  dplyr::rename(sample_id = X1, tumor_label = X2)
+```"
+"1","Rows: 2136 Columns: 2
+── Column specification ─────────────────────────────────────────────────────────────────────────────────────────
+Delimiter: \" \"
+chr (2): X1, X2
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+"

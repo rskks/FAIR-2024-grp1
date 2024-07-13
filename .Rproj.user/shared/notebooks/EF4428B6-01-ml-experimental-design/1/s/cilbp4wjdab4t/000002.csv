@@ -1,0 +1,7 @@
+"0","```r
+table(labels_df$predicted_label_model1)
+```"
+"1","
+case 
+ 200 
+"

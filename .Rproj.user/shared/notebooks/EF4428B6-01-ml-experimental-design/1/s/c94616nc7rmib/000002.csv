@@ -1,0 +1,7 @@
+"0","```r
+table(labels_df$class_label)
+```"
+"1","
+   case control 
+    170      30 
+"

@@ -1,0 +1,6 @@
+"0","treatment_pattern <- (rep(c(""Untreated"", ""Treatment""), times = 9))"
+"0","treatment <- factor(c(treatment_pattern))"
+"0",""
+"0","donor_pattern <- c(rep(""M24"", times = 6), rep(""M31"", times = 6), rep(""M32"", times = 6))"
+"0","donors <- factor(c(donor_pattern))"
+"0",""

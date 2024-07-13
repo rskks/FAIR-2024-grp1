@@ -1,0 +1,15 @@
+"0","```r
+svm_cv_results
+```"
+"1","Support Vector Machines with Linear Kernel 
+
+No pre-processing
+Resampling: Cross-Validated (5 fold) 
+Summary of sample sizes: 1709, 1709, 1709, 1709, 1708 
+Resampling results:
+
+  Accuracy   Kappa    
+  0.9981276  0.9850718
+
+Tuning parameter 'C' was held constant at a value of 1
+"

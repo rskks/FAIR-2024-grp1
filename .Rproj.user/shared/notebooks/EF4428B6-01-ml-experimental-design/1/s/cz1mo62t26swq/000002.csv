@@ -1,0 +1,9 @@
+"0","```r
+tcga_meta_df <- tcga_meta_df %>% 
+  dplyr::mutate(tumor_labels = dplyr::case_when(
+    # When type is \"metastatic\" or \"tumor\", set `tumor_labels` value to \"Tumor\"
+    Type %in% c(\"metastatic\", \"tumor\") ~ \"Tumor\",
+    # Otherwise, set it to normal
+    TRUE ~ \"Normal\"
+  ))
+```"

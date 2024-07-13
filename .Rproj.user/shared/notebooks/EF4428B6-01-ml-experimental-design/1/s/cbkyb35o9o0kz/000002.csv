@@ -1,0 +1,32 @@
+"0","```r
+confusionMatrix(data = tcga_predicted_labels,
+                reference = factor(tcga_meta_df$tumor_labels))
+```"
+"1","Confusion Matrix and Statistics
+
+          Reference
+Prediction Normal Tumor
+    Normal      7     0
+    Tumor      15   525
+                                          
+               Accuracy : 0.9726          
+                 95% CI : (0.9552, 0.9846)
+    No Information Rate : 0.9598          
+    P-Value [Acc > NIR] : 0.0727571       
+                                          
+                  Kappa : 0.4725          
+                                          
+ Mcnemar's Test P-Value : 0.0003006       
+                                          
+            Sensitivity : 0.31818         
+            Specificity : 1.00000         
+         Pos Pred Value : 1.00000         
+         Neg Pred Value : 0.97222         
+             Prevalence : 0.04022         
+         Detection Rate : 0.01280         
+   Detection Prevalence : 0.01280         
+      Balanced Accuracy : 0.65909         
+                                          
+       'Positive' Class : Normal          
+                                          
+"

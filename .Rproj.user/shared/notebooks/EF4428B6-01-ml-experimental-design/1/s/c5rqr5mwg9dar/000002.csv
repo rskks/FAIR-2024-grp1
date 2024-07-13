@@ -1,0 +1,7 @@
+"0","```r
+table(metabric_meta_df$tumor_label[-train_index]) / (length(metabric_meta_df$tumor_label) - length(train_index))
+```"
+"1","
+   Normal     Tumor 
+0.0657277 0.9342723 
+"

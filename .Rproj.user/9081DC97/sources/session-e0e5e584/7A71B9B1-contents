@@ -1,0 +1,259 @@
+---
+title: "R Markdown Tutorial"
+subtitle: "FAIR Bioinformatics - July 11, 2024"
+author: "Lily Taub (adapted from Lily Charpentier)"
+date: "2024-07-09"
+output: 
+  html_notebook: default
+  html_document:
+    df_print: paged
+---
+
+
+### First of all, what even is R Markdown? 
+
+Markdown is a lightweight language that exists independent of R that can be used to write fully-formatted documents. It is plain-text and uses a simple set of rules to produce rather sophisticated output.  
+
+A combination of Markdown (which is text with special characters to indicate desired formatting) and R code within it, is called R Markdown. R scripts have the file extension .R, Markdown documents have a file extension .md, therefore, R Markdown documents are .Rmd.
+
+[R Notebook](http://rmarkdown.rstudio.com/r_notebooks.html#using_notebooks) is a special execution mode for [R Markdown](http://rmarkdown.rstudio.com) documents.
+
+Essentially, R Markdown is a file, whereas R Notebook is a way to work with R Markdown files. R Notebooks do not have their own file format, they all use .Rmd, like R Markdown. All R Notebooks can be ‘knitted’ to R Markdown outputs, and all R Markdown documents can be interfaced as a Notebook.  
+
+An important difference is in the execution of code. In R Markdown, when the file is Knit, all the elements (code chunks) are also run.  
+In a Notebook, when the file is rendered with the Preview button, only code which has already been run is included in the final output. Also, Notebooks are interactive (you can hide or display code), and Markdown files are not.
+
+**Advantages of R Notebook and R Markdown:** 
+
+- Code, output, and narrative text can live in the same document
+    - Easier to work on smaller screen, e.g., laptop  
+- The code itself can be shown or hidden (in a Notebook this can be done interactively) 
+- The code is not limited to R - you can use Python, SQL etc. (see green code chunk button)
+- Interactive and reproducible  
+- Facilitates collaboration by easily sharing human-readable documents
+- Output formats including HTML (web page), PDF, and MS Word
+  
+***
+
+# 1. Creating an R Markdown file
+
+Let's look at new notebook file and markdown files!  
+To create a new Notebook go to: File &rarr; New File &rarr; R Notebook  
+
+To create a new Markdown file go to: File &rarr; New File &rarr; R Markdown
+
+***
+
+# 2. R Markdown formatting basics  
+
+Let's start with one of the first things we see in a document: The headings  
+
+# Level 1 heading (#)  
+## Level 2 heading (##)  
+### Level 3 heading (###)  
+#### Level 4 heading (####)  
+##### Level 5 heading (#####)  
+###### Level 6 heading (######)  
+Regular font size  
+
+End a line with two spaces to start a new paragraph.  
+Create an empty line with \<br>  
+<br>
+horizontal rule / page break: (***):
+
+*** 
+
+*italics* and _italics_ (surround words by * or _)  
+**bold** and __bold__ (surround words by ** or __)  
+superscript^2^ (surround by ^)  
+subscript~2~ (surround by ~)  
+<p style="color:red">add some red color</p>  
+\<p style="color:red">add some red color\</p>  
+`code` within text (surround with `)
+
+***
+
+You can also write in LaTeX! Denote LaTeX by wrapping the characters in two dollar signs (`$`).
+
+$X \sim N(\mu,\sigma^2)$
+
+# 3. Generating output
+
+Code chunks in R Markdown/Notebook files are demarcated by backwards tick marks. The opening tick marks include a programming language specification in curly braces.
+
+***
+
+#### Create 100 random numbers with a mean of 0 and an sd of 1:
+```{r}
+Random <- rnorm(100)
+hist(Random, breaks = 20)
+abline(v=mean(Random), col="red", lty="dashed", lwd=3)
+```
+#### Display a table
+```{r}
+head(iris, n=20)
+```
+By default: The HTML file will first **echo** the commands in the R code block, then **eval**uates the R code, and **include**s the output.  
+Can you customize the format of this output? Yes!
+
+***
+
+# 4. Code chunk options  
+
+### Three arguments can change the behavior of your code chunks:  
+
+#### **echo=FALSE**
+The argument echo specifies whether the R code block is included (default is TRUE). Adding echo=FALSE in the opening line of the R code block will not include your code in the output
+```{r, echo=FALSE}
+hist(Random, breaks = 20)
+abline(v=mean(Random), col="red", lty="dashed", lwd=3)
+```
+
+#### **eval=FALSE**  
+The argument eval specifies whether the R command is executed (default is TRUE). Adding eval=FALSE in the opening line will show the R code, but not generate output
+```{r, eval=FALSE}
+hist(Random, breaks = 20)
+abline(v=mean(Random), col="red", lty="dashed", lwd=3)
+```
+
+#### **include=FALSE**  
+The argument include specifies whether the code and output are included (default is TRUE). Adding include=FALSE in the opening line of the R code block will not include the commmand. Now the command and the output are both not shown, but the statement is evaluated. 
+
+```{r, include=FALSE}
+a <- 3
+```
+
+We can use inline code, demarcated by single backwards ticks, to verify that the chunk above was evaluated even though it wasn't included in the R Markdown/R Notebook rendering.
+
+```{r, echo=F}
+paste("The value of a is",a, sep=" ")
+```
+
+
+#### Control figure size (fig.height=6, fig.width=6)
+```{r, fig.height=6, fig.width=6}
+hist(Random, breaks = 20)
+abline(v=mean(Random), col="red", lty="dashed", lwd=3)
+```
+
+#### Control figure size (fig.height=3, fig.width=5)
+```{r, fig.height=3, fig.width=5}
+hist(Random, breaks = 20)
+abline(v=mean(Random), col="red", lty="dashed", lwd=3)
+```
+
+#### Control messages and warnings
+
+##### messages
+```{r}
+library(tidyverse)
+```
+
+##### message=FALSE
+```{r, message=FALSE}
+library(tidyverse)
+```
+
+##### warnings
+```{r}
+boxplot(log2(-1:10))
+```
+
+##### warning = FALSE
+```{r, warning=FALSE}
+boxplot(log2(-1:10))
+```
+
+More details on chunk options can be found [here](https://yihui.name/knitr/options/)
+
+***
+
+# 5. Inline code
+
+```{r}
+Sys.time()
+# Use `r Sys.time()` outside of code chunk to display the current date and time inline!
+```
+The current time is `r Sys.time()`
+
+
+#### Let's apply this in-line code to our random data
+Our random data had a mean of `r mean(Random)` and a standard deviation of `r sd(Random)`! This is useful for keeping any descriptive statistics you add in the narrative of an R Markdown in sync with your data. 
+
+***
+
+# 6. Saving your output
+
+Option 1: To save your output as a R notebook, navigate to the "Preview" button above your .Rmd file. This will create a notebook HTML in your current directory. The file will be appended with the extension `.nb.html`. In order to save the .Rmd file as an R notebook, the header must include `html_notebook` in the output specifications.
+
+Option 2: Choose "Knit to [Format of choice]" to turn your .Rmd file into an R Markdown. **Note:** You will loose the interactive elements of a notebook.
+An HTML link, Word doc, or PDF will automatically open and will appear in your working directory!  
+**Another Note:** If you would like to knit to a PDF, you will need LaTeX installed.
+**One more:** Dynamic images like GIFs do not play nicely with PDFs. 
+
+
+Now you've had an intro into R Markdown/Notebooks! Try out some exercises and begin **knitting** your own R Markdown files!
+
+![](https://mochimochiland.com/wp-content/uploads/wwkip650.gif){width=300px}
+
+
+***
+
+# Exercises  
+
+<p style="color:green">***Green***</p>
+
+- Open a new R Studio Notebook file  
+- Save the Rmd file as "Green.Rmd"  
+- Change the title of the default template to "Green Exercises Notebook"  
+- Put a level 3 heading "A plot of the cars example data" above the code chunk that plots the cars data  
+- Insert a new R code chunk at the bottom of the file  
+- Put a level 4 heading "mtcars example data" above the code chunk  
+- Inside the new R code chunk, look at the structure of the 'mtcars' data  
+- Make sure that you execute both R code chunks before knitting to html
+- Look at the html output file  
+- Try knitting to a Word document instead</p>
+
+***
+
+<p style="color:blue">***Blue***</p>
+
+- Open a new R Studio Notebook file  
+- Save the Rmd file as "Blue.Rmd"  
+- Change the title of the default template to "Blue Exercises Notebook"  
+- Add a subtitle with today's date  
+- Delete everything below - - - from the template file  
+- Insert a new R code chunk  
+- Put a level 3 heading "mtcars data" above the code chunk  
+- Inside the new R code chunk, look at the structure of the 'mtcars' example data set  
+- In a new R code chunk, generate a box plot of horsepower (hp) as a function of cylinders (cyl)  
+- Inside a new R code chunk, use the getwd() function to display the current working directory  
+- Below the code chunk, create a sentence starting with "The current working directory is" that displays the current working directory inline.  
+- For an added challenge, make the part of the sentence that displays the working directory appear bold.   
+- Make sure that you execute all R code chunks before knitting to html
+- Look at the html output file  
+- Try knitting to a Word document instead</p>
+
+***
+
+***Black***
+
+- Open a new R Studio Notebook file  
+- Save the Rmd file as "Black.Rmd"  
+- Change the title of the default template to "Black Exercises Notebook"  
+- Add a subtitle with today's date  
+- Delete everything below - - - from the template file  
+- Insert a new R code chunk  
+- Put a title "mtcars data" in orange font above the code chunk  
+- Inside the new R code chunk, look at the structure of the 'mtcars' example data set  
+- In a new R code chunk, generate a box plot of horsepower (hp) as a function of cylinders (cyl)  
+- Make a table of the cylinder variable (cyl)  
+- Subset the first element of the cyl variable table (to display just the information for cars with 4 cylinders)  
+- Subset the cyl variable table to display just the number of cars that have 4 cylinders, but not the label (4)  
+- Using the mtcars example data set, generate an inline statement about how many cars in the data set have 4 cylinders, how many have 6 cylinders and how many have 8 cylinders.  
+- Display the part of the sentence that contains the numbers of cylinders in bold font  
+- If you have a Mac, you can add a bash code chunk and use the appropriate UNIX command to display the current working directory  
+- If you happen to know D3, Python, Rcpp, SQL or Stan (and have them installed on your system), you can play around with code chunks for these languages as well.
+- Make sure that you execute all code chunks before knitting to html
+- Look at the html output file  
+- Try knitting to a Word document instead  

@@ -1,0 +1,7 @@
+"0","```r
+# First few labels for our *training* data
+head(predict(svm_result, newdata = metabric_train))
+```"
+"1","[1] Tumor Tumor Tumor Tumor Tumor Tumor
+Levels: Normal Tumor
+"
